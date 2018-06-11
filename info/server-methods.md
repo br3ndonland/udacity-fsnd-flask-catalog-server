@@ -384,6 +384,29 @@ The [DigitalOcean Initial Server Setup with Ubuntu 16.04 tutorial](https://www.d
   ```
 
 - Navigating to [http://104.131.20.200/](http://104.131.20.200/) should show the "It works!" default Apache page.
+- Configure postgresql
+
+  ```text
+  sudo apt-get install libpq-dev python-dev
+  sudo apt-get install postgresql postgresql-contrib
+  sudo su - postgres
+  psql
+  CREATE USER catalog WITH PASSWORD 'password';
+  ALTER USER catalog CREATEDB;
+  CREATE DATABASE catalog WITH OWNER catalog;
+  \c catalog
+  REVOKE ALL ON SCHEMA public FROM public;
+  GRANT ALL ON SCHEMA public TO catalog;
+  \q
+  exit
+  ```
+
+- Check contents of postgresql configuration file with
+
+  ```shell
+  nano /etc/postgresql/9.5/main/pg_hba.conf
+  ```
+
 - Git was already installed.
 
   ```shell

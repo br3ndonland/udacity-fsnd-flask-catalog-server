@@ -28,7 +28,7 @@ Brendon Smith
 
 ### Select a server host
 
-I started out configuring a server with [Amazon Lightsail](https://aws.amazon.com/lightsail/), as recommended by Udacity. It was difficult and frustrating. In particular, when changing the SSH port, I got locked out and had to destroy and recreate the instance. I also am required to set up a user `grader` for this project, but was not able to log in with any user other than `ubuntu`.
+I started out configuring a server with [Amazon Lightsail](https://aws.amazon.com/lightsail/), as recommended by Udacity. I was not happy with the experience. In particular, when changing the SSH port, I got locked out and had to destroy and recreate the instance. I also am required to set up a user `grader` for this project, but was not able to log in with any user other than `ubuntu`.
 
 <details><summary>Here are my notes on Amazon Lightsail.</summary>
 
@@ -235,6 +235,7 @@ Configure Uncomplicated Firewall (UFW) and set ports. Also see [Ubuntu Server Gu
     > You configured this instance to use udacity_key (us-east-2) key pair.
     >
     > You can download your default private key from the Account page.
+  - I got locked out once, and had to destroy the server instance. After this, plus the annoyance with SSH keys, I switched to DigitalOcean.
 - Enable firewall
 
   ```shell
@@ -269,7 +270,7 @@ The [DigitalOcean Initial Server Setup with Ubuntu 16.04 tutorial](https://www.d
 
 - It was easy to set up my DigitalOcean droplet. I just followed the on-screen instructions, but there is also a [tutorial](info@news.digitalocean.com) available if needed.
 - I chose a $5 base-level droplet, enabled the $1 backups, and paid for it with PayPal.
-- I did not set up the SSH key here. See below for SSH setup.
+- I did not set up the SSH key during droplet creation. See below for SSH setup.
 - Ready to go! Wow, that was so much easier than Amazon Lightsail.
 - Update and upgrade packages
 
@@ -313,7 +314,7 @@ The [DigitalOcean Initial Server Setup with Ubuntu 16.04 tutorial](https://www.d
 
 ### Secure server
 
-- I did this as `root`, but I could have also done it as `br3ndonland` with `sudo`.
+- I did this as `root`, but I could have also done it as a user with `sudo`.
 
   ```shell
   sudo ufw app list
@@ -345,14 +346,26 @@ The [DigitalOcean Initial Server Setup with Ubuntu 16.04 tutorial](https://www.d
 
 - Change SSH port from 22 to 2200
   - We were required to do this for the Udacity project.
-  - Open the configuration file
+  - Open the configuration file. Edit the file with the nano text editor, save and quit with ctrl+x.
 
     ```shell
     ubuntu@ip-172-26-10-184:~$ sudo nano /etc/ssh/sshd_config
     ```
 
-  - Edit the file with the nano text editor, save and quit with ctrl+x.
-  - Restart ssh
+  - **Important**: Disable password authentication in `sshd_config` so SSH is required for login:
+
+    ```text
+    # Change to no to disable tunnelled clear text passwords
+    PasswordAuthentication no
+    ```
+
+  - **Important**: Disable root login so user must specify `sudo`:
+
+    ```text
+    PermitRootLogin no
+    ```
+
+  - Restart SSH
 
     ```shell
     service ssh restart
@@ -364,16 +377,9 @@ The [DigitalOcean Initial Server Setup with Ubuntu 16.04 tutorial](https://www.d
     ssh grader@104.131.20.200 -p 2200
     ```
 
-  - Disable root login
-
-    ```shell
-    sudo nano /etc/ssh/sshd_config
-    ```
-
-  - Change to `PermitRootLogin no`
-  - Restart SSH with `sudo service ssh restart`
-
 ### Deploy app
+
+DigitalOcean has helpful documentation for the Linux server itself, but less documentation for applications. There were a few community articles on Flask, but they were several years old. Also, in the future, it would be preferable to automate the server creation and app deployment process with shell scripts. [Here](https://github.com/turkerdotpy/django-setup-digitalocean) is an example for DigitalOcean and Django.
 
 - Install and configure Apache to serve a Python mod_wsgi application.
 
@@ -414,7 +420,7 @@ The [DigitalOcean Initial Server Setup with Ubuntu 16.04 tutorial](https://www.d
   /usr/bin/git
   ```
 
-- Clone app repo and create directory in a single step:
+- Clone [app repo](https://github.com/br3ndonland/udacity-fsnd-p4-flask-catalog) and create directory in a single step:
 
   ```shell
   sudo git clone git://github.com/br3ndonland/udacity-fsnd-p4-flask-catalog.git /var/www/catalog
@@ -435,13 +441,22 @@ The [DigitalOcean Initial Server Setup with Ubuntu 16.04 tutorial](https://www.d
     ```
 
   - Copy the client secret from the JSON on your local machine into the file on the server.
-- Add WSGI file catalog.wsgi
+- Add WSGI file `catalog.wsgi`
 
   ```shell
   sudo nano /var/www/catalog/catalog.wsgi
   ```
 
-- Add [configuration file](https://httpd.apache.org/docs/2.2/configuring.html)
+  ```text
+  import sys
+  import logging
+  logging.basicConfig(stream=sys.stderr)
+  sys.path.insert(0, "/var/www/catalog/")
+
+  from catalog import app as application
+  ```
+
+- Add [configuration file](https://httpd.apache.org/docs/2.2/configuring.html) `catalog.conf`
 
   ```shell
   sudo nano /etc/apache2/sites-available/catalog.conf
@@ -470,10 +485,10 @@ The [DigitalOcean Initial Server Setup with Ubuntu 16.04 tutorial](https://www.d
 - Enable virtual host:
 
   ```shell
-  sudo a2ensite catalog`.
+  sudo a2ensite catalog
   ```
 
-- Install pip and pipenv. Specify the python path.
+- Install pip and pipenv
 
   ```shell
   sudo apt install python-pip
@@ -489,8 +504,9 @@ The [DigitalOcean Initial Server Setup with Ubuntu 16.04 tutorial](https://www.d
     sudo apt-get update
     sudo apt-get install python3.6
     ```
+
   - Python 3.6 must be specified with `python3.6` when python is run.
-- Initialize pipenv, specifying python 3.6.
+- Initialize pipenv, specifying the path to python 3.6.
 
   ```shell
   cd /var/www/catalog

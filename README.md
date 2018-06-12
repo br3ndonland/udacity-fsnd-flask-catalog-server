@@ -20,13 +20,19 @@ In this project, I configured an Ubuntu Linux server instance on [DigitalOcean](
 
 ## Details
 
-- DigitalOcean server instance: **udacity-fsnd-p6-server-02**
+- DigitalOcean server instance: **udacity-fsnd-p6-server**
+- URL:
 - Public IP address: 104.131.20.200
 - SSH port: 2200
 - User: `grader`
 - Password: `grader`
-- Public SSH key: Provided to Udacity reviewer during project submission
-- URL:
+- SSH key: Provided to Udacity reviewer during project submission
+- Log in with
+
+  ```shell
+  ssh grader@104.131.20.200 -p 2200
+  ```
+
 - Software:
   - [Catalog application](https://github.com/br3ndonland/udacity-fsnd-p4-flask-catalog)
   - Python 3.6

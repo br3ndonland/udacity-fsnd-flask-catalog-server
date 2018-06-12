@@ -119,28 +119,87 @@ Brendon Smith
 
 ### Response
 
-**Thank you for your very helpful review! Here is a summary of changes I made:**
+**Thank you for your helpful review. Here is a summary of changes I made:**
 
-- **Private SSH key**
+- [x] **Disable password authentication**
+  - I opened the config file and changed `PasswordAuthentication` to `no`.
+
+    ```shell
+    sudo nano /etc/ssh/sshd_config
+    ```
+
+    ```text
+    # Change to no to disable tunnelled clear text passwords
+    PasswordAuthentication no
+    ```
+
+  - I then restarted ssh.
+
+    ```shell
+    sudo service ssh restart
+    ```
+
+- [x] **Include SSH key**
   - I included the private SSH key on resubmission, so the reviewer could properly access the project without password authentication.
-- **Disable password authentication**
+  - **I was not able to ssh in from my local machine, and had to complete the project in the DigitalOcean browser console.** I spent hours troubleshooting my ssh keys, but couldn't get past `Permission denied (publickey).`
+  - I followed the suggestions on [askubuntu](https://askubuntu.com/questions/311558/ssh-permission-denied-publickey) and [DigitalOcean](https://www.digitalocean.com/community/tutorials/how-to-configure-custom-connection-options-for-your-ssh-client).
+  - I tried modifying the *~/.ssh/config* file to include:
 
-  ```shell
-  sudo nano /etc/ssh/sshd_config
-  ```
+    ```text
+    Host udacity-fsnd-p6-server
+      Hostname 104.131.20.200
+      User grader
+      Port 2200
+      PubKeyAuthentication yes
 
-  ```text
-  # Change to no to disable tunnelled clear text passwords
-  PasswordAuthentication no
-  ```
+    Host *
+      AddKeysToAgent yes
+      UseKeychain yes
+      IdentityFile ~/.ssh/id_rsa
+    ```
 
-  ```shell
-  sudo service ssh restart
-  ```
+  - I tried to log in with
 
-- **Web server responds on port 80**
+    ```shell
+    ssh udacity-fsnd-p6-server
+    ```
 
-  ```shell
-  sudo locate access.log access_log
-  sudo nano /var/log/apache2/access.log
-  ```
+  - and also directly, like
+
+    ```shell
+    ```
+
+  - I modified the permissions on my .ssh directory and keys
+
+    ```shell
+    chmod 700 ~/.ssh
+    ```
+
+  - I tried re-generating the key. I even tried a more secure key, like the one used for GitHub.
+
+    ```shell
+    ssh-keygen -t rsa -b 4096 -C "brendon.w.smith@gmail.com"
+    eval "$(ssh-agent -s)"
+    ssh-add -K ~/.ssh/udacity_fsnd_p6_server
+    pbcopy < ~/.ssh/udacity_fsnd_p6_server.pub
+    ```
+
+  - I added the key directly through the DigitalOcean browser interface.
+  - I tried adding the key again with
+
+    ```shell
+    ssh-copy-id udacity-fsnd-p6-server
+    ```
+
+  - Nothing worked. No matter what I did, I still got
+
+    ```text
+    grader@104.131.20.200: Permission denied (publickey).
+    ```
+
+- [ ] **Web server on port 80**
+  - The app needed more configuration to properly run Flask. I followed the [instructions from DigitalOcean](https://www.digitalocean.com/community/tutorials/how-to-serve-flask-applications-with-gunicorn-and-nginx-on-ubuntu-16-04) to serve the Flask application with Gunicorn and Nginx on Ubuntu 16.04.
+  - I added notes on further configuration to [server-methods.md](server-methods.md).
+  - Unfortunately I still could not get the app to run.
+- [ ] **DNS**
+  - [DigitalOcean is not a DNS registrar](https://www.digitalocean.com/community/tutorials/an-introduction-to-digitalocean-dns) at this time. I will consider purchasing a domain name in the future.

@@ -20,6 +20,7 @@ Brendon Smith
 - [Select a server host](#select-a-server-host)
 - [Set up server](#set-up-server)
 - [Set up user](#set-up-user)
+- [Set up SSH](#set-up-ssh)
 - [Secure server](#secure-server)
 - [Deploy app](#deploy-app)
   - [Clone app files](#clone-app-files)
@@ -280,10 +281,18 @@ The [DigitalOcean Initial Server Setup with Ubuntu 16.04 tutorial](https://www.d
   ```
 
   - Select "None of these," then find UTC in the list and press enter.
+- If you ever need to restart the server, run `sudo shutdown -h now` from the console, then turn the server back on through the website interface.
 
 ## Set up user
 
 - I continued by following the [DigitalOcean Initial Server Setup with Ubuntu 16.04 tutorial](https://www.digitalocean.com/community/tutorials/initial-server-setup-with-ubuntu-16-04).
+- The first step is logging in as root:
+
+  ```shell
+  ssh root@104.131.20.200
+  ```
+
+- At this point, root can log in with the password sent to your email address by DigitalOcean, and you can then change the password after login.
 - After logging in as root, I created two users: `br3ndonland` for me and `grader` for the Udacity grader. I left the `grader` password `grader`. I gave each user `sudo` privileges.
 
   ```shell
@@ -293,28 +302,38 @@ The [DigitalOcean Initial Server Setup with Ubuntu 16.04 tutorial](https://www.d
   usermod -aG sudo grader
   ```
 
-- I set up SSH key access for each user with `ssh-copy-id`.
+## Set up SSH
+
+- See the [DigitalOcean How To Connect To Your Droplet with SSH](https://www.digitalocean.com/community/tutorials/how-to-connect-to-your-droplet-with-ssh) guide.
+- I [generated an SSH key and added it to the SSH agent](https://help.github.com/articles/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent/) *on my local machine,* with the method recommended by GitHub, which attaches your email instead of the local machine name. The config file may need to be manually created with `touch ~/.ssh/config` first. I named the key `udacity_grader`.
 
   ```shell
-  ssh-keygen
-  ssh-copy-id br3ndonland@104.131.20.200
-  ssh br3ndonland@104.131.20.200
-  exit
-  ssh-copy-id grader@104.131.20.200
-  ssh grader@104.131.20.200
+  touch ~/.ssh/config
+  ssh-keygen -t rsa -b 4096 -C "your_email@example.com"
+  eval "$(ssh-agent -s)"
+  ssh-add -K ~/.ssh/udacity_grader
   ```
 
-  - Ensure the ~/.ssh/config file is set up to allow public key authentication. See [askubuntu](https://askubuntu.com/questions/311558/ssh-permission-denied-publickey) for info.
+- I copied the SSH key to the server for each user with `ssh-copy-id`. **Note that `ssh-copy-id` relies on password authentication, so if you disable password authentication this won't work.** Copy the SSH ID and verify login before disabling password authentication.
+
+  ```shell
+  ssh-copy-id -i ~/.ssh/udacity_grader br3ndonland@104.131.20.200 -p 2200
+  ssh -p 2200 br3ndonland@104.131.20.200
+  exit
+  ssh-copy-id -i ~/.ssh/udacity_grader grader@104.131.20.200 -p 2200
+  ssh -p 2200 grader@104.131.20.200
+  exit
+  ```
+
+  - At this point, login will be accomplished by matching the *private* key that pairs with the public key you uploaded. The the ~/.ssh/config file on your local machine can also be configured.
 
     ```text
-    Host udacity-fsnd-p6-server
+    Host udacity6
       Hostname 104.131.20.200
       User grader
       Port 2200
       PubKeyAuthentication yes
-      IdentityFile ~/.ssh/udacity_fsnd_p6_server
-      AddKeysToAgent yes
-      UseKeychain yes
+      IdentityFile ~/.ssh/udacity_grader
 
     Host *
       AddKeysToAgent yes
@@ -322,8 +341,8 @@ The [DigitalOcean Initial Server Setup with Ubuntu 16.04 tutorial](https://www.d
       IdentityFile ~/.ssh/id_rsa
     ```
 
-  - At this point, you should be able to ssh with the the *private* key that pairs with the public key you uploaded. If the config file is set up as above, log in with `ssh udacity-fsnd-p6-server`
-  - On my first try, I added an SSH key when initially creating the server instance. This made my life more difficult for two reasons: I couldn't use `ssh-copy-id`, and I had a problem with the key. I had created a separate `udacity_key_grader`, but continued to get `Permission denied (publickey).` I re-did the keygen, just keeping the default `id_rsa` filename, and it worked after that.
+  - If the config file is set up as above, log in with `ssh udacity6`
+  - On my first try with DigitalOcean, I added an SSH key when initially creating the server instance. This made my life more difficult because I couldn't use `ssh-copy-id`. I destroyed the droplet, re-did droplet creation, and added the SSH key from the command line with `ssh-copy-id` after logging in.
 
 ## Secure server
 
@@ -359,43 +378,54 @@ The [DigitalOcean Initial Server Setup with Ubuntu 16.04 tutorial](https://www.d
 
 - Change SSH port from 22 to 2200
   - We were required to do this for the Udacity project.
-  - Open the configuration file. Edit the file with the nano text editor, save and quit with ctrl+x.
+  - Open the configuration file and edit the file with the nano text editor.
 
     ```shell
-    ubuntu@ip-172-26-10-184:~$ sudo nano /etc/ssh/sshd_config
+    sudo nano /etc/ssh/sshd_config
     ```
 
-  - **Important**: Disable password authentication in `sshd_config` so SSH is required for login:
+    ```text
+    # What ports, IPs and protocols we listen for
+    Port 2200
+    ```
+
+  - **Important**: Disable password authentication in `sshd_config` so SSH is required for login, and disable root login so user must specify `sudo`:
 
     ```text
     # Change to no to disable tunnelled clear text passwords
     PasswordAuthentication no
-    ```
-
-  - **Important**: Disable root login so user must specify `sudo`:
-
-    ```text
     PermitRootLogin no
     ```
 
+  - Save and quit with ctrl+x.
   - Restart SSH
 
     ```shell
+    sudo systemctl reload sshd
     service ssh restart
     ```
 
-  - Open a new terminal window and log in, this time specifying port 2200.
+  - Exit and log back in, this time specifying port 2200.
 
     ```shell
     ssh grader@104.131.20.200 -p 2200
     ```
 
-- The DigitalOcean browser console is still available after changing the ssh port, unlike Lightsail.
-  - Log into the DigitalOcean website.
-  - Click the droplet (server).
-  - Click console.
-  - The login is slightly different. Instead of typing `ssh grader@104.131.20.200 -p 2200`, simply type `grader`.
-  - This totally saved me. I started having SSH `publickey` issues, and was unable to ssh in from my local machine, but I could still log in through the browser console, so I didn't have to destroy the droplet and start over.
+  - **The DigitalOcean browser console is still available after changing the ssh port, unlike Amazon Lightsail.**
+    - Log into the DigitalOcean website.
+    - Click the droplet (server).
+    - Click console.
+    - The login is slightly different. Instead of typing `ssh grader@104.131.20.200 -p 2200`, simply type `grader`.
+    - This totally saved me. I started having SSH `publickey` issues, and was unable to ssh in from my local machine, but I could still log in through the browser console, so I didn't have to destroy the droplet and start over.
+  - **After disabling password login, I started getting the SSH error `Permission denied (publickey).`** I spent hours troubleshooting it and working in the DigitalOcean browser console.  I read resources including [SSH.com](https://www.ssh.com/iam/ssh-key-management/) and [askubuntu](https://askubuntu.com/questions/311558/ssh-permission-denied-publickey), but the solutions didn't help. Eventually, I realized that the best solution was:
+    - Delete the SSH key
+    - Re-do the keygen as described above.
+    - Temporarily enable password login again from the DigitalOcean browser console.
+    - Add the new key with `ssh-copy-id` as described above, and authenticate with user password.
+    - Log in with SSH.
+    - Disable password authentication.
+    - Exit
+    - Log back in to verify SSH.
 
 ## Deploy app
 

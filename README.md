@@ -20,9 +20,9 @@ In this project, I configured an Ubuntu Linux server instance on [DigitalOcean](
 
 ## Details
 
-- DigitalOcean server instance: **udacity-fsnd-p6-server**
+- DigitalOcean server instance: **udacity6**
 - URL:
-- Public IP address: 104.131.20.200
+- Public IP address: 192.241.141.20
 - SSH port: 2200
 - User: `grader`
 - Password: `grader`
@@ -30,12 +30,11 @@ In this project, I configured an Ubuntu Linux server instance on [DigitalOcean](
 - Log in with
 
   ```shell
-  ssh grader@104.131.20.200 -p 2200
+  ssh grader@192.241.141.20 -p 2200
   ```
 
 - Software:
-  - [Catalog application](https://github.com/br3ndonland/udacity-fsnd-p4-flask-catalog)
-  - Python 3.6
+  - [Flask catalog application](https://github.com/br3ndonland/udacity-fsnd-p4-flask-catalog)
+  - Python 3
   - pip
-  - pipenv
 - See [server-methods.md](info/server-methods.md) for walkthrough.

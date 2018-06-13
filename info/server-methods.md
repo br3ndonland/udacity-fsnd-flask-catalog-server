@@ -14,19 +14,18 @@ Brendon Smith
 
 [![license](https://img.shields.io/badge/license-MIT-blue.svg?longCache=true&style=for-the-badge)](https://choosealicense.com/)
 
-## Table of Contents
+## Table of Contents <!-- omit in toc -->
 
-- [Table of Contents](#table-of-contents)
 - [Select a server host](#select-a-server-host)
 - [Set up server](#set-up-server)
 - [Set up user](#set-up-user)
 - [Set up SSH](#set-up-ssh)
 - [Secure server](#secure-server)
 - [Deploy app](#deploy-app)
+  - [Configure postgres](#configure-postgres)
   - [Clone app files](#clone-app-files)
-  - [Configure Apache server](#configure-apache-server)
   - [Create Python virtual environment](#create-python-virtual-environment)
-  - [Configure Flask app](#configure-flask-app)
+  - [Configure Flask app for web server](#configure-flask-app-for-web-server)
 
 ## Select a server host
 
@@ -76,8 +75,8 @@ Logout with `exit` when done.
 ### Update and upgrade Ubuntu packages <!-- omit in toc -->
 
 ```shell
-sudo apt-get update
-sudo apt-get upgrade
+sudo apt update
+sudo apt upgrade
 sudo reboot
 ```
 
@@ -267,11 +266,12 @@ The [DigitalOcean Initial Server Setup with Ubuntu 16.04 tutorial](https://www.d
 - I chose a $5 base-level droplet, enabled the $1 backups, and paid for it with PayPal.
 - I did not set up the SSH key during droplet creation. See below for SSH setup.
 - Ready to go! Wow, that was so much easier than Amazon Lightsail.
-- Update and upgrade packages
+- Update and upgrade packages, then reboot
 
   ```shell
-  sudo apt-get update
-  sudo apt-get upgrade
+  sudo apt update
+  sudo apt upgrade
+  sudo reboot
   ```
 
 - Set time zone to UTC:
@@ -289,7 +289,7 @@ The [DigitalOcean Initial Server Setup with Ubuntu 16.04 tutorial](https://www.d
 - The first step is logging in as root:
 
   ```shell
-  ssh root@104.131.20.200
+  ssh root@192.241.141.20
   ```
 
 - At this point, root can log in with the password sent to your email address by DigitalOcean, and you can then change the password after login.
@@ -305,23 +305,23 @@ The [DigitalOcean Initial Server Setup with Ubuntu 16.04 tutorial](https://www.d
 ## Set up SSH
 
 - See the [DigitalOcean How To Connect To Your Droplet with SSH](https://www.digitalocean.com/community/tutorials/how-to-connect-to-your-droplet-with-ssh) guide.
-- I [generated an SSH key and added it to the SSH agent](https://help.github.com/articles/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent/) *on my local machine,* with the method recommended by GitHub, which attaches your email instead of the local machine name. The config file may need to be manually created with `touch ~/.ssh/config` first. I named the key `udacity_grader`.
+- I [generated an SSH key and added it to the SSH agent](https://help.github.com/articles/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent/) *on my local machine,* with the method recommended by GitHub, which attaches your email instead of the local machine name. The config file may need to be manually created with `touch ~/.ssh/config` first. I named the key `udacity6`.
 
   ```shell
   touch ~/.ssh/config
   ssh-keygen -t rsa -b 4096 -C "your_email@example.com"
   eval "$(ssh-agent -s)"
-  ssh-add -K ~/.ssh/udacity_grader
+  ssh-add -K ~/.ssh/udacity6
   ```
 
-- I copied the SSH key to the server for each user with `ssh-copy-id`. **Note that `ssh-copy-id` relies on password authentication, so if you disable password authentication this won't work.** Copy the SSH ID and verify login before disabling password authentication.
+- I copied the SSH key to the server for each user with `ssh-copy-id`. **Note that `ssh-copy-id` relies on password authentication, so if you disable password authentication this won't work.** Copy the SSH ID and verify login before disabling password authentication. If you have already reconfigured your ssh port to 2200, add `-p 2200`.
 
   ```shell
-  ssh-copy-id -i ~/.ssh/udacity_grader br3ndonland@104.131.20.200 -p 2200
-  ssh -p 2200 br3ndonland@104.131.20.200
+  ssh-copy-id -i ~/.ssh/udacity_grader br3ndonland@192.241.141.20
+  ssh br3ndonland@192.241.141.20
   exit
-  ssh-copy-id -i ~/.ssh/udacity_grader grader@104.131.20.200 -p 2200
-  ssh -p 2200 grader@104.131.20.200
+  ssh-copy-id -i ~/.ssh/udacity_grader grader@192.241.141.20
+  ssh grader@192.241.141.20
   exit
   ```
 
@@ -329,11 +329,11 @@ The [DigitalOcean Initial Server Setup with Ubuntu 16.04 tutorial](https://www.d
 
     ```text
     Host udacity6
-      Hostname 104.131.20.200
+      Hostname 192.241.141.20
       User grader
       Port 2200
       PubKeyAuthentication yes
-      IdentityFile ~/.ssh/udacity_grader
+      IdentityFile ~/.ssh/udacity6
 
     Host *
       AddKeysToAgent yes
@@ -346,7 +346,7 @@ The [DigitalOcean Initial Server Setup with Ubuntu 16.04 tutorial](https://www.d
 
 ## Secure server
 
-- I did this as `root`, but I could have also done it as a user with `sudo`.
+- I did this as user `grader` with `sudo`.
 
   ```shell
   sudo ufw app list
@@ -408,16 +408,16 @@ The [DigitalOcean Initial Server Setup with Ubuntu 16.04 tutorial](https://www.d
   - Exit and log back in, this time specifying port 2200.
 
     ```shell
-    ssh grader@104.131.20.200 -p 2200
+    ssh grader@192.241.141.20 -p 2200
     ```
 
   - **The DigitalOcean browser console is still available after changing the ssh port, unlike Amazon Lightsail.**
     - Log into the DigitalOcean website.
     - Click the droplet (server).
     - Click console.
-    - The login is slightly different. Instead of typing `ssh grader@104.131.20.200 -p 2200`, simply type `grader`.
+    - The login is slightly different. Instead of typing `ssh grader@192.241.141.20 -p 2200`, simply type `grader`.
     - This totally saved me. I started having SSH `publickey` issues, and was unable to ssh in from my local machine, but I could still log in through the browser console, so I didn't have to destroy the droplet and start over.
-  - **After disabling password login, I started getting the SSH error `Permission denied (publickey).`** I spent hours troubleshooting it and working in the DigitalOcean browser console.  I read resources including [SSH.com](https://www.ssh.com/iam/ssh-key-management/) and [askubuntu](https://askubuntu.com/questions/311558/ssh-permission-denied-publickey), but the solutions didn't help. Eventually, I realized that the best solution was:
+  - **After disabling password login, I started getting the SSH error `Permission denied (publickey).`** I couldn't log in from my local terminal. I spent hours troubleshooting it and working in the DigitalOcean browser console.  I read resources including [SSH.com](https://www.ssh.com/iam/ssh-key-management/) and [askubuntu](https://askubuntu.com/questions/311558/ssh-permission-denied-publickey), but the solutions didn't help. Eventually, I realized that the best solution was:
     - Delete the SSH key
     - Re-do the keygen as described above.
     - Temporarily enable password login again from the DigitalOcean browser console.
@@ -429,13 +429,43 @@ The [DigitalOcean Initial Server Setup with Ubuntu 16.04 tutorial](https://www.d
 
 ## Deploy app
 
-DigitalOcean has helpful documentation for the Linux server itself, but less documentation for applications. They have [one-click app support for Django](https://www.digitalocean.com/community/tutorials/how-to-use-the-django-one-click-install-image-for-ubuntu-16-04), but not for Flask. There were a few community articles on Flask. I followed the [instructions](https://www.digitalocean.com/community/tutorials/how-to-serve-flask-applications-with-gunicorn-and-nginx-on-ubuntu-16-04) to serve the Flask application with Gunicorn and Nginx on Ubuntu 16.04.
+DigitalOcean has helpful documentation for the Linux server itself, but less documentation for applications. They have [one-click app support for Django](https://www.digitalocean.com/community/tutorials/how-to-use-the-django-one-click-install-image-for-ubuntu-16-04), but not for Flask. There were a few community articles on Flask.
 
 In the future, it would be preferable to just use [Docker](https://www.docker.com), or at least automate the server creation and app deployment process with shell scripts.
 
+### Configure postgres
+
+- My app uses SQLite, but apparently Postgres must be installed in order to create and manage the application database.
+- Note the prompt changes after logging in to the database.
+
+  ```shell
+  $ sudo apt-get install libpq5
+  $ sudo apt-get install postgresql
+  $ sudo su - postgres
+  postgres@udacity6:~$ psql
+  psql (9.5.12)
+  Type "help" for help.
+
+  postgres=CREATE USER catalog WITH PASSWORD 'grader';
+  CREATE ROLE
+  postgres=ALTER USER catalog CREATEDB;
+  ALTER ROLE
+  postgres=CREATE DATABASE catalog WITH OWNER catalog;
+  CREATE DATABASE
+  postgres=\c catalog
+  You are now connected to database "catalog" as user "postgres".
+  catalog=REVOKE ALL ON SCHEMA public FROM public;
+  REVOKE
+  catalog=GRANT ALL ON SCHEMA public TO catalog;
+  GRANT
+  catalog=\q
+  postgres@udacity6:~$ exit
+  logout
+  ```
+
 ### Clone app files
 
-- Git was already installed.
+- Git should already be installed.
 
   ```shell
   $ which git
@@ -457,44 +487,202 @@ In the future, it would be preferable to just use [Docker](https://www.docker.co
 - Change owner of catalog directory:
 
   ```shell
-  sudo chown -R grader:grader catalog
+  sudo chown -R grader:grader /var/www/catalog
   ```
 
-- Add the client_secrets.json file, containing Google Cloud credentials.
-  - Create an empty JSON file, and open the file in the nano text editor.
+- Copy the client secret from your Google Cloud dashboard into the *client_secrets.json* file on the server.
+
+  ```shell
+  cd /var/www/catalog
+  sudo touch client_secrets.json
+  sudo nano client_secrets.json
+  ```
+
+- In the *application.py* file, change the path to the *client_secrets.json* file to absolute.
+
+  ```shell
+  cd /var/www/catalog
+  sudo nano application.py
+  ```
+
+  ```python
+  # Obtain credentials from JSON file
+  CLIENT_ID = json.loads(open('/var/www/catalog/client_secrets.json', 'r')
+                         .read())['web']['client_id']
+  CLIENT_SECRET = json.loads(open('/var/www/catalog/client_secrets.json', 'r')
+                             .read())['web']['client_secret']
+  redirect_uris = json.loads(open('/var/www/catalog/client_secrets.json', 'r')
+                             .read())['web']['redirect_uris']
+
+
+  ```
+
+- Change database_setup.py, database_data.py, and application.py for PostgreSQL instead of SQLite
+
+  ```python
+  # delete this
+  # engine = create_engine('sqlite:///catalog.db')
+  # and add this
+  engine = create_engine('postgresql://catalog:grader@localhost/catalog')
+  ```
+
+- Changing from SQLite to PostgreSQL will require installation of `psycopg2`.
+
+  ```shell
+  pipenv shell
+  (catalog-1BsMKvn0) grader@udacity6:/var/www/catalog$ pipenv install psycopg2
+  ```
+
+### Create Python virtual environment
+
+#### Set up Python
+
+- Install Python 3.6
+  - My pipenv requires Python 3.6, which is not available from Ubuntu apt yet. Python 3.6 must be installed as a third-party application.
+  - I followed the instructions [here](https://askubuntu.com/a/865569) to install:
 
     ```shell
-    sudo touch client_secrets.json
-    sudo nano client_secrets.json
+    sudo add-apt-repository ppa:deadsnakes/ppa
+    sudo apt update
+    sudo apt install python3.6
     ```
 
-  - Copy the client secret from the JSON on your local machine (or your Google Cloud dashboard) into the file on the server.
-- Add WSGI file `catalog.wsgi`
+  - Python 3.6 must be specified with `python3.6` when python is run.
+
+- Install pip
+
+  ```shell
+  sudo apt install python3-pip
+  ```
+
+#### Virtual env
+
+- Python 3 is bundled with the `venv` module for creation of virtual environments. I already had my GitHub repo set up with venv.
+
+  ```shell
+  cd <PATH>
+  python3 -m venv venv
+  # activate virtual env
+  source venv/bin/activate
+  # install modules listed in requirements.txt
+  (venv) <PATH> pip install -r requirements.txt
+  ```
+
+- When attempting to run `python3 -m venv venv` I got an error:
+
+  ```text
+  Error: Command '['/var/www/catalog/v/bin/python3.6', '-Im', 'ensurepip', '--upgrade', '--default-pip']' returned non-zero exit status 1.
+  ```
+
+- I also had pipenv installed, so tried that instead.
+
+#### Pipenv
+
+- Install pipenv
+
+  ```shell
+  sudo pip install pipenv
+  ```
+
+- Initialize pipenv, specifying the path to python 3.6. Pipenv should install the package dependencies.
+
+  ```shell
+  cd /var/www/catalog
+  grader@udacity6:/var/www/catalog$ pipenv install --python /usr/bin/python3.6
+  Creating a virtualenv for this project…
+  Using /usr/bin/python3.6 (3.6.5) to create virtualenv…
+  ⠋Running virtualenv with interpreter /usr/bin/python3.6
+  Using base prefix '/usr'
+  New python executable in /home/grader/.local/share/virtualenvs/catalog-1BsMKvn0/bin/python3.6
+  Also creating executable in /home/grader/.local/share/virtualenvs/catalog-1BsMKvn0/bin/python
+  Installing setuptools, pip, wheel...done.
+
+  Virtualenv location: /home/grader/.local/share/virtualenvs/catalog-1BsMKvn0
+  Installing dependencies from Pipfile.lock (9616db)…
+    🐍   ▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉▉ 24/24 — 00:00:24
+  To activate this project's virtualenv, run the following:
+  $ pipenv shell
+  ```
+
+- Spawn a pipenv shell
+
+  ```shell
+  pipenv shell
+  ```
+
+- Run application files. Note that, within the `pipenv`, it is not necessary to specify `python3.6`, because the env specifies the Python version.
+
+  ```shell
+  # ensure pipenv shell is activated
+  (catalog-1BsMKvn0) grader@udacity6:/var/www/catalog$ python database_setup.py
+  Database created.
+
+  (catalog-1BsMKvn0) grader@udacity6:/var/www/catalog$ python database_data.py
+
+  Provide credentials to be used when populating the database
+  Please enter your name: Brendon Smith
+  Please enter your email address: brendon.w.smith@gmail.com
+  User brendon.w.smith@gmail.com successfully added to database.
+  Category "Equipment" added to database.
+  Category "Accessories" added to database.
+  Item "Hoist Dual Action Leg Press" added to database.
+  Item "Hoist Power Cage" added to database.
+  Item "Pro Monster Mini Resistance Band" added to database.
+  Item "Fat Gripz" added to database.
+  Item "RumbleRoller" added to database.
+  Item "SlingShot Hip Circle 2.0" added to database.
+  Database population complete.
+
+  (catalog-1BsMKvn0) grader@udacity6:/var/www/catalog$ python application.py
+  * Serving Flask app "application" (lazy loading)
+  * Environment: production
+    WARNING: Do not use the development server in a production environment.
+    Use a production WSGI server instead.
+  * Debug mode: on
+  * Running on http://0.0.0.0:8000/ (Press CTRL+C to quit)
+  * Restarting with stat
+  * Debugger is active!
+  * Debugger PIN: 221-847-106
+  ```
+
+- The Flask app should now be running.
+- Stop the server with ctrl+c and continue with configuration process.
+
+### Configure Flask app for web server
+
+#### Apache
+
+- Install and configure Apache to serve a Python `mod_wsgi` application.
+- Follow instructions from [Flask](http://flask.pocoo.org/docs/1.0/deploying/mod_wsgi/).
+- Install Apache and Python 3 mod_wsgi
+
+  ```shell
+  sudo apt-get install apache2
+  sudo apt-get install libapache2-mod-wsgi-py3
+  ```
+
+  - Some guides also suggest running `sudo a2enmod wsgi`, but WSGI should already enable itself upon installation.
+  - Navigating to [http://192.241.141.20/](http://192.241.141.20/) should show the "It works!" default Apache page.
+- Create WSGI file `catalog.wsgi`
 
   ```shell
   sudo nano /var/www/catalog/catalog.wsgi
   ```
 
-  ```text
+  ```python
+  # Enable use of virtual environment with mod_wsgi
+  # activate_this = '/home/grader/.local/share/virtualenvs/catalog-1BsMKvn0/bin/activate_this.py'
+  # with open(activate_this) as file_:
+  #     exec(file_.read(), dict(__file__=activate_this))
   import sys
   import logging
   logging.basicConfig(stream=sys.stderr)
   sys.path.insert(0, "/var/www/catalog/")
+  # Import Flask instance from main application file
+  from application import app as application
 
-  from catalog import app as application
   ```
 
-### Configure Apache server
-
-- Install and configure Apache to serve a Python `mod_wsgi` application.
-
-  ```shell
-  sudo apt-get install apache2
-  sudo apt-get install libapache2-mod-wsgi-py3
-  sudo a2enmod wsgi
-  ```
-
-- Navigating to [http://104.131.20.200/](http://104.131.20.200/) should show the "It works!" default Apache page.
 - Add Apache [configuration file](https://httpd.apache.org/docs/2.2/configuring.html) `catalog.conf`
 
   ```shell
@@ -503,12 +691,14 @@ In the future, it would be preferable to just use [Docker](https://www.docker.co
 
   ```text
   <VirtualHost *:80>
-    ServerName 104.131.20.200
+    ServerName 192.241.141.20
     ServerAdmin brendon.w.smith@gmail.com
-    WSGIDaemonProcess catalog user=grader threads=3
+    WSGIDaemonProcess application user=grader threads=3
     WSGIScriptAlias / /var/www/catalog/catalog.wsgi
     <Directory /var/www/catalog/>
-      Order allow,deny
+      WSGIProcessGroup application
+      WSGIApplicationGroup %{GLOBAL}
+      Order deny,allow
       Allow from all
     </Directory>
     ErrorLog ${APACHE_LOG_DIR}/error.log
@@ -521,6 +711,7 @@ In the future, it would be preferable to just use [Docker](https://www.docker.co
 
   ```shell
   sudo a2ensite catalog
+  sudo service apache2 restart
   ```
 
 - If needed, logs can be viewed:
@@ -530,68 +721,31 @@ In the future, it would be preferable to just use [Docker](https://www.docker.co
   sudo nano /var/log/apache2/access.log
   ```
 
-### Create Python virtual environment
-
-- Install pip and pipenv
-
-  ```shell
-  sudo apt install python-pip
-  sudo pip install pipenv
-  ```
-
-- Install Python 3.6
-  - My pipenv requires Python 3.6, which is not available from Ubuntu apt yet. Python 3.6 must be installed as a third-party application.
-  - I followed the instructions [here](https://askubuntu.com/a/865569) to install:
-
-    ```shell
-    sudo add-apt-repository ppa:deadsnakes/ppa
-    sudo apt-get update
-    sudo apt-get install python3.6
-    ```
-
-  - Python 3.6 must be specified with `python3.6` when python is run.
-- Initialize pipenv, specifying the path to python 3.6. Pipenv should install the package dependencies.
-
-  ```shell
-  cd /var/www/catalog
-  pipenv install --python /usr/bin/python3.6
-  ```
-
-- Spawn a pipenv shell
-
-  ```shell
-  pipenv shell
-  ```
-
-- Run application files
-
-  ```shell
-  # ensure pipenv shell is activated
-  python3.6 database_setup.py
-  python3.6 database_data.py
-  python3.6 application.py
-  ```
-
-- The Flask app should now be running.
-- Stop the server with ctrl+c and continue with configuration process.
-
-### Configure Flask app
-
-#### WSGI
-
-- Configure WSGI file `catalog.wsgi`
-
-  ```shell
-  sudo nano /var/www/catalog/catalog.wsgi
-  ```
+- I get an error:
 
   ```text
-  import sys
-  import logging
-  logging.basicConfig(stream=sys.stderr)
-  sys.path.insert(0, "/home/grader/var/www/catalog/")
+  Internal Server Error
 
-  from catalog import app as application
+  The server encountered an internal error or misconfiguration and was unable to complete your request.
+
+  Please contact the server administrator at brendon.w.smith@gmail.com to inform them of the time this error occurred, and the actions you performed just before this error.
+
+  More information about this error may be available in the server error log.
+  Apache/2.4.18 (Ubuntu) Server at 192.241.141.20 Port 80
+  ```
+
+<details><summary>Attempt with Gunicorn and Nginx</summary>
+
+#### Gunicorn and Nginx <!-- omit in toc -->
+
+I followed the [instructions](https://www.digitalocean.com/community/tutorials/how-to-serve-flask-applications-with-gunicorn-and-nginx-on-ubuntu-16-04) to serve the Flask application with Gunicorn and Nginx on Ubuntu 16.04. I didn't get it to work.
+
+- Install Gunicorn and Nginx
+
+  ```shell
+  sudo apt-get install nginx
+  cd /var/www/catalog
+  pipenv install gunicorn
   ```
 
 - Create WSGI entry point: Basically create a new file to import Flask instance from application file (*application.py* in this case), and replicate the instructions at the bottom of the *application.py* file. Note that I had to create a new *wsgi.py* file first with `touch`, then add the text, otherwise it wouldn't save (I was working in the DigitalOcean browser console, not sure if that's why). I'm also not sure if you need the `CLIENT_SECRET` in the WSGI file, but I was getting `app.secret_key` errors from Gunicorn later so I added it.
@@ -611,16 +765,6 @@ In the future, it would be preferable to just use [Docker](https://www.docker.co
   if __name__ == 'main':
       app.secret_key = CLIENT_SECRET
       app.run(host='0.0.0.0', port=8000, debug=True)
-  ```
-
-#### Gunicorn and Nginx
-
-- Install Gunicorn and Nginx
-
-  ```shell
-  sudo apt-get install nginx
-  cd /var/www/catalog
-  pipenv install gunicorn
   ```
 
 - Create Gunicorn systemd unit file:
@@ -648,7 +792,7 @@ In the future, it would be preferable to just use [Docker](https://www.docker.co
   (pipenv) <PATH> $ gunicorn --bind 0.0.0.0:8000 wsgi:app
   ```
 
-  Gunicorn appeared to start up, and was listening on the correct port, but I was not able to access the server at [http://104.131.20.200:80/](http://104.131.20.200:80/) at this point.
+  Gunicorn appeared to start up, and was listening on the correct port, but I was not able to access the server at [http://192.241.141.20:80/](http://192.241.141.20:80/) at this point.
 
 - Create nginx file for app:
 
@@ -702,6 +846,8 @@ In the future, it would be preferable to just use [Docker](https://www.docker.co
   502 Bad Gateway
   nginx/1.10.3 (Ubuntu)
   ```
+
+</details>
 
 For notes on project review, see [server-review.md](server-review.md).
 

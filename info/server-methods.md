@@ -22,10 +22,12 @@ Brendon Smith
 - [Set up SSH](#set-up-ssh)
 - [Secure server](#secure-server)
 - [Deploy app](#deploy-app)
-  - [Configure postgres](#configure-postgres)
+  - [Configure PostgreSQL](#configure-postgresql)
   - [Clone app files](#clone-app-files)
-  - [Create Python virtual environment](#create-python-virtual-environment)
-  - [Configure Flask app for web server](#configure-flask-app-for-web-server)
+  - [Set up Python environment](#set-up-python-environment)
+  - [Configure web server](#configure-web-server)
+  - [Hosting](#hosting)
+  - [Troubleshooting](#troubleshooting)
 
 ## Select a server host
 
@@ -260,6 +262,8 @@ Configure Uncomplicated Firewall (UFW) and set ports. Also see [Ubuntu Server Gu
 
 The [DigitalOcean Initial Server Setup with Ubuntu 16.04 tutorial](https://www.digitalocean.com/community/tutorials/initial-server-setup-with-ubuntu-16-04) was far more helpful than any of the Amazon or Udacity resources. I switched to DigitalOcean for the rest of the project.
 
+[(Back to top)](#top)
+
 ## Set up server
 
 - It was easy to set up my DigitalOcean droplet. I just followed the on-screen instructions, but there is also a [tutorial](info@news.digitalocean.com) available if needed.
@@ -281,7 +285,9 @@ The [DigitalOcean Initial Server Setup with Ubuntu 16.04 tutorial](https://www.d
   ```
 
   - Select "None of these," then find UTC in the list and press enter.
-- If you ever need to restart the server, run `sudo shutdown -h now` from the console, then turn the server back on through the website interface.
+- If you ever need to restart the server, run either `sudo reboot`, or `sudo shutdown -h now` and turn the server back on through the website interface.
+
+[(Back to top)](#top)
 
 ## Set up user
 
@@ -314,35 +320,21 @@ The [DigitalOcean Initial Server Setup with Ubuntu 16.04 tutorial](https://www.d
   ssh-add -K ~/.ssh/udacity6
   ```
 
-- I copied the SSH key to the server for each user with `ssh-copy-id`. **Note that `ssh-copy-id` relies on password authentication, so if you disable password authentication this won't work.** Copy the SSH ID and verify login before disabling password authentication. If you have already reconfigured your ssh port to 2200, add `-p 2200`.
+- I copied the SSH key to the server for each user with `ssh-copy-id`. **Note that `ssh-copy-id` relies on password authentication, so if you disable password authentication this won't work.** Copy the SSH ID and verify login before disabling password authentication. If you have already reconfigured your ssh port to 2200, add `-p 2200`. Also, be sure to reference the *private* key when using `ssh-copy-id`, and not the public key (in this example, *udacity6* instead of *udacity6.pub*).
 
   ```shell
-  ssh-copy-id -i ~/.ssh/udacity_grader br3ndonland@192.241.141.20
+  ssh-copy-id -i ~/.ssh/udacity6 br3ndonland@192.241.141.20
   ssh br3ndonland@192.241.141.20
   exit
-  ssh-copy-id -i ~/.ssh/udacity_grader grader@192.241.141.20
+  ssh-copy-id -i ~/.ssh/udacity6 grader@192.241.141.20
   ssh grader@192.241.141.20
   exit
   ```
 
-  - At this point, login will be accomplished by matching the *private* key that pairs with the public key you uploaded. The the ~/.ssh/config file on your local machine can also be configured.
+- At this point, login will be accomplished by matching the *private* key that pairs with the public key you uploaded.
+- On my first try with DigitalOcean, I added an SSH key when initially creating the server instance. This made my life more difficult because I couldn't use `ssh-copy-id`. I destroyed the droplet, re-did droplet creation, and added the SSH key from the command line with `ssh-copy-id` after logging in.
 
-    ```text
-    Host udacity6
-      Hostname 192.241.141.20
-      User grader
-      Port 2200
-      PubKeyAuthentication yes
-      IdentityFile ~/.ssh/udacity6
-
-    Host *
-      AddKeysToAgent yes
-      UseKeychain yes
-      IdentityFile ~/.ssh/id_rsa
-    ```
-
-  - If the config file is set up as above, log in with `ssh udacity6`
-  - On my first try with DigitalOcean, I added an SSH key when initially creating the server instance. This made my life more difficult because I couldn't use `ssh-copy-id`. I destroyed the droplet, re-did droplet creation, and added the SSH key from the command line with `ssh-copy-id` after logging in.
+[(Back to top)](#top)
 
 ## Secure server
 
@@ -410,22 +402,44 @@ The [DigitalOcean Initial Server Setup with Ubuntu 16.04 tutorial](https://www.d
     ```shell
     ssh grader@192.241.141.20 -p 2200
     ```
+- The *~/.ssh/config* file on your local machine can also be configured for easier login. This file is on my local machine, so I was able to to open it with vscode.
 
-  - **The DigitalOcean browser console is still available after changing the ssh port, unlike Amazon Lightsail.**
-    - Log into the DigitalOcean website.
-    - Click the droplet (server).
-    - Click console.
-    - The login is slightly different. Instead of typing `ssh grader@192.241.141.20 -p 2200`, simply type `grader`.
-    - This totally saved me. I started having SSH `publickey` issues, and was unable to ssh in from my local machine, but I could still log in through the browser console, so I didn't have to destroy the droplet and start over.
-  - **After disabling password login, I started getting the SSH error `Permission denied (publickey).`** I couldn't log in from my local terminal. I spent hours troubleshooting it and working in the DigitalOcean browser console.  I read resources including [SSH.com](https://www.ssh.com/iam/ssh-key-management/) and [askubuntu](https://askubuntu.com/questions/311558/ssh-permission-denied-publickey), but the solutions didn't help. Eventually, I realized that the best solution was:
-    - Delete the SSH key
-    - Re-do the keygen as described above.
-    - Temporarily enable password login again from the DigitalOcean browser console.
-    - Add the new key with `ssh-copy-id` as described above, and authenticate with user password.
-    - Log in with SSH.
-    - Disable password authentication.
-    - Exit
-    - Log back in to verify SSH.
+  ```shell
+  $ code ~/.ssh/config
+  ```
+
+  ```text
+  Host udacity6
+    Hostname 192.241.141.20
+    User grader
+    Port 2200
+    PubKeyAuthentication yes
+    IdentityFile ~/.ssh/udacity6
+
+  Host *
+    AddKeysToAgent yes
+    UseKeychain yes
+    IdentityFile ~/.ssh/id_rsa
+  ```
+
+- If the config file is set up as above, log in with `ssh udacity6`.
+- **The DigitalOcean browser console is still available after changing the ssh port, unlike Amazon Lightsail.**
+  - Log into the DigitalOcean website.
+  - Click the droplet (server).
+  - Click console.
+  - The login is slightly different. Instead of typing `ssh grader@192.241.141.20 -p 2200`, simply type `grader`.
+  - This totally saved me. I started having SSH `publickey` issues, and was unable to ssh in from my local machine. I could still log in through the online browser console, where I re-enabled password authentication, enabling me to log in from my local machine and re-do the ssh keygen process. I didn't have to destroy the droplet and start over.
+- **After disabling password login, I started getting the SSH error `Permission denied (publickey).`** I couldn't log in from my local terminal. I spent hours troubleshooting it and working in the DigitalOcean browser console.  I read resources including [SSH.com](https://www.ssh.com/iam/ssh-key-management/) and [askubuntu](https://askubuntu.com/questions/311558/ssh-permission-denied-publickey), but the solutions didn't help. Eventually, I realized that the best solution was:
+  - Delete the SSH key
+  - Re-do the keygen as described above.
+  - Temporarily enable password login again from the DigitalOcean browser console.
+  - Add the new key with `ssh-copy-id` as described above, and authenticate with user password.
+  - Log in with SSH.
+  - Disable password authentication.
+  - Exit
+  - Log back in to verify SSH.
+
+[(Back to top)](#top)
 
 ## Deploy app
 
@@ -433,10 +447,9 @@ DigitalOcean has helpful documentation for the Linux server itself, but less doc
 
 In the future, it would be preferable to just use [Docker](https://www.docker.com), or at least automate the server creation and app deployment process with shell scripts.
 
-### Configure postgres
+### Configure PostgreSQL
 
-- My app uses SQLite, but apparently Postgres must be installed in order to create and manage the application database.
-- Note the prompt changes after logging in to the database.
+- My app uses SQLite, but apparently Postgres must be installed in order to create and manage the application database. Note the prompt changes after logging in to the database.
 
   ```shell
   $ sudo apt-get install libpq5
@@ -463,6 +476,8 @@ In the future, it would be preferable to just use [Docker](https://www.docker.co
   logout
   ```
 
+- Changing from SQLite to PostgreSQL will require installation of `psycopg2` after Python is installed.
+
 ### Clone app files
 
 - Git should already be installed.
@@ -478,10 +493,10 @@ In the future, it would be preferable to just use [Docker](https://www.docker.co
   sudo git clone git://github.com/br3ndonland/udacity-fsnd-p4-flask-catalog.git /var/www/catalog
   ```
 
-  The app is now located at
+  The app is now located in `/var/www/`, the directory in which Apache allows sites, or "virtual host configurations."
 
   ```text
-  /var/www/catalog
+  cd /var/www/catalog
   ```
 
 - Change owner of catalog directory:
@@ -490,7 +505,11 @@ In the future, it would be preferable to just use [Docker](https://www.docker.co
   sudo chown -R grader:grader /var/www/catalog
   ```
 
-- Copy the client secret from your Google Cloud dashboard into the *client_secrets.json* file on the server.
+### Set up Python environment
+
+#### Configure app files
+
+- Copy the client secret from your [Google Cloud APIs credentials dashboard](https://console.cloud.google.com/apis/credentials) into the *client_secrets.json* file on the server. Make sure the server's IP, and your domain name if you have one, have been added to the "Authorized JavaScript origins" and "Authorized redirect URIs."
 
   ```shell
   cd /var/www/catalog
@@ -498,7 +517,9 @@ In the future, it would be preferable to just use [Docker](https://www.docker.co
   sudo nano client_secrets.json
   ```
 
-- In the *application.py* file, change the path to the *client_secrets.json* file to absolute.
+- Modify the *application.py* file for the server:
+  - Move `app.secret_key` out of the `if __name__ == '__main__'` block (which will not be used by the WSGI server), as recommended [here](https://stackoverflow.com/a/33898263).
+  - Change paths to the *client_secrets.json* file, and any other external files, to absolute. Remember to modify the path in the Google Sign-In code.
 
   ```shell
   cd /var/www/catalog
@@ -508,16 +529,39 @@ In the future, it would be preferable to just use [Docker](https://www.docker.co
   ```python
   # Obtain credentials from JSON file
   CLIENT_ID = json.loads(open('/var/www/catalog/client_secrets.json', 'r')
-                         .read())['web']['client_id']
+                        .read())['web']['client_id']
   CLIENT_SECRET = json.loads(open('/var/www/catalog/client_secrets.json', 'r')
-                             .read())['web']['client_secret']
+                            .read())['web']['client_secret']
   redirect_uris = json.loads(open('/var/www/catalog/client_secrets.json', 'r')
-                             .read())['web']['redirect_uris']
+                            .read())['web']['redirect_uris']
+  app.secret_key = CLIENT_SECRET
 
 
+  # Google Sign-In
+  @app.route('/gconnect', methods=['POST'])
+  def gconnect():
+      """App route function for Google Sign-In."""
+      # Confirm that client and server tokens match
+      if request.args.get('state') != login_session['state']:
+          response = make_response(json.dumps('Invalid state parameter.'), 401)
+          response.headers['Content-Type'] = 'application/json'
+          return response
+      # Obtain authorization code
+      code = request.data
+      try:
+          # Upgrade the authorization code into a credentials object
+          oauth_flow = flow_from_clientsecrets('/var/www/catalog/client_secrets.json', scope='')
+          oauth_flow.redirect_uri = 'postmessage'
+          credentials = oauth_flow.step2_exchange(code)
+      except FlowExchangeError:
+          response = make_response(
+              json.dumps('Failed to upgrade the authorization code.'), 401)
+          response.headers['Content-Type'] = 'application/json'
+          return response
+      # (application code continues below)
   ```
 
-- Change database_setup.py, database_data.py, and application.py for PostgreSQL instead of SQLite
+- Configure *database_setup.py*, *database_data.py*, and *application.py* for PostgreSQL instead of SQLite.
 
   ```python
   # delete this
@@ -526,19 +570,10 @@ In the future, it would be preferable to just use [Docker](https://www.docker.co
   engine = create_engine('postgresql://catalog:grader@localhost/catalog')
   ```
 
-- Changing from SQLite to PostgreSQL will require installation of `psycopg2`.
-
-  ```shell
-  pipenv shell
-  (catalog-1BsMKvn0) grader@udacity6:/var/www/catalog$ pipenv install psycopg2
-  ```
-
-### Create Python virtual environment
-
 #### Set up Python
 
 - Install Python 3.6
-  - My pipenv requires Python 3.6, which is not available from Ubuntu apt yet. Python 3.6 must be installed as a third-party application.
+  - My virtual environment requires Python 3.6, which is not available from Ubuntu apt yet. Python 3.6 must be installed as a third-party application.
   - I followed the instructions [here](https://askubuntu.com/a/865569) to install:
 
     ```shell
@@ -547,7 +582,7 @@ In the future, it would be preferable to just use [Docker](https://www.docker.co
     sudo apt install python3.6
     ```
 
-  - Python 3.6 must be specified with `python3.6` when python is run.
+  - Python 3.6 must be specified with `python3.6` when python is run, or when the virtual environment is configured.
 
 - Install pip
 
@@ -555,36 +590,65 @@ In the future, it would be preferable to just use [Docker](https://www.docker.co
   sudo apt install python3-pip
   ```
 
+#### Run app without virtual environment
+
+**Note that, despite extensive troubleshooting, I was not able to configure WSGI to serve up the Python Flask app from a virtual environment. The way I got the app running was by installing required packages without a virtual environment.**
+
+- Install required packages
+
+  ```shell
+  sudo pip3 install flask
+  sudo pip3 install oauth2client
+  sudo pip3 install psycopg2
+  sudo pip3 install requests
+  sudo pip3 install sqlalchemy
+  ```
+
+- Run application files
+
+  ```shell
+  python3.6 database_setup.py
+  python3.6 database_data.py
+  python3.6 application.py
+  ```
+
+- The Flask app should now be running on localhost. Stop the local server with ctrl+c and continue with the configuration process.
+
+<details><summary>Virtual environment configuration details</summary>
+
+**I did not end up using the virtual environment, because I couldn't get WSGI to serve up my app from within a virtual environment. See Apache troubleshooting below.**
+
 #### Virtual env
 
-- Python 3 is bundled with the `venv` module for creation of virtual environments. I already had my GitHub repo set up with venv.
+- Python 3 is bundled with the `venv` module for creation of virtual environments. I already had my GitHub repo set up with `venv`.
+- The plan was to run this:
 
   ```shell
   cd <PATH>
-  python3 -m venv venv
+  python3.6 -m venv venv
   # activate virtual env
   source venv/bin/activate
   # install modules listed in requirements.txt
   (venv) <PATH> pip install -r requirements.txt
   ```
 
-- When attempting to run `python3 -m venv venv` I got an error:
+- When attempting to run `python3.6 -m venv venv` I got an error:
 
   ```text
   Error: Command '['/var/www/catalog/v/bin/python3.6', '-Im', 'ensurepip', '--upgrade', '--default-pip']' returned non-zero exit status 1.
   ```
 
-- I also had pipenv installed, so tried that instead.
+- I also had pipenv installed, so I tried that instead.
 
 #### Pipenv
 
 - Install pipenv
 
   ```shell
-  sudo pip install pipenv
+  sudo pip3 install pipenv
   ```
 
-- Initialize pipenv, specifying the path to python 3.6. Pipenv should install the package dependencies.
+- Initialize pipenv, specifying the path to python 3.6. Pipenv will install the package dependencies.
 
   ```shell
   cd /var/www/catalog
@@ -645,16 +709,59 @@ In the future, it would be preferable to just use [Docker](https://www.docker.co
   * Debugger PIN: 221-847-106
   ```
 
-- The Flask app should now be running.
-- Stop the server with ctrl+c and continue with configuration process.
+- The Flask app can also be run by pipenv without entering the pipenv shell:
 
-### Configure Flask app for web server
+  ```shell
+  grader@udacity6:/var/www/catalog$ pipenv run application.py
+  ```
+
+- The Flask app should now be running on localhost. Stop the server with ctrl+c and continue with configuration process.
+
+</details>
+
+### Configure web server
+
+#### WSGI
+
+- Create WSGI script.
+  - It seems like the script can either be named `catalog.wsgi` or `wsgi.py`, as long as the script name is properly specified in the Apache configuration file.
+  - The script has a few parts:
+    - Enabling the virtual environment: As explained above, I wasn't able to get WSGI to serve the app from the virtual environment, so I deleted this part. In the future, if configuration is successful, code added to *wsgi.py* would look something like this (based on the [Flask mod_wsgi docs](http://flask.pocoo.org/docs/1.0/deploying/mod_wsgi/#working-with-virtual-environments), modified for pipenv):
+
+      ```python
+      # Enable use of virtual environment with mod_wsgi
+      activate_this = '/home/grader/.local/share/virtualenvs/catalog-1BsMKvn0/bin/activate_this.py'
+      with open(activate_this) as file_:
+          exec(file_.read(), dict(__file__=activate_this))
+      ```
+
+    - Specifying the path to the application directory: It seems like this path is only used within *wsgi.py* to find the specific *application.py* file. File paths used within *application.py* will still need to be changed to absolute.
+    - Importing the Flask app: The syntax requirements here were a little difficult to figure out also. I originally had `from catalog import app as application`, which didn't seem to be working. It helped to open the *wsgi.py* file in my local text editor (vscode), because the linting showed me that `catalog` was not found. I needed to import the Flask instance (`app`) from the application file *application.py*, which would be `from application import app as application`.
+    - Name main block: This seems to be used instead of the name/main block in the main application file. I added the filesystem session type as recommended [here](https://stackoverflow.com/a/33898263).
+- Here's what a completed WSGI script should look like:
+
+  ```shell
+  sudo nano /var/www/catalog/wsgi.py
+  ```
+
+  ```python
+  # Add path to application directory
+  import sys
+  sys.path.insert(0, "/var/www/catalog")
+
+  # Import Flask instance from main application file
+  from application import app as application
+
+  if __name__ == '__main__':
+      app.config['SESSION_TYPE'] = 'filesystem'
+      app.run(host='0.0.0.0', port=8000)
+
+  ```
 
 #### Apache
 
-- Install and configure Apache to serve a Python `mod_wsgi` application.
-- Follow instructions from [Flask](http://flask.pocoo.org/docs/1.0/deploying/mod_wsgi/).
-- Install Apache and Python 3 mod_wsgi
+- Install and configure Apache to serve a Python `mod_wsgi` application. The [Flask docs](http://flask.pocoo.org/docs/1.0/deploying/mod_wsgi/) have some simple instructions.
+- Install Apache and Python 3 `mod_wsgi`
 
   ```shell
   sudo apt-get install apache2
@@ -662,28 +769,20 @@ In the future, it would be preferable to just use [Docker](https://www.docker.co
   ```
 
   - Some guides also suggest running `sudo a2enmod wsgi`, but WSGI should already enable itself upon installation.
-  - Navigating to [http://192.241.141.20/](http://192.241.141.20/) should show the "It works!" default Apache page.
-- Create WSGI file `catalog.wsgi`
-
-  ```shell
-  sudo nano /var/www/catalog/catalog.wsgi
-  ```
-
-  ```python
-  # Enable use of virtual environment with mod_wsgi
-  # activate_this = '/home/grader/.local/share/virtualenvs/catalog-1BsMKvn0/bin/activate_this.py'
-  # with open(activate_this) as file_:
-  #     exec(file_.read(), dict(__file__=activate_this))
-  import sys
-  import logging
-  logging.basicConfig(stream=sys.stderr)
-  sys.path.insert(0, "/var/www/catalog/")
-  # Import Flask instance from main application file
-  from application import app as application
-
-  ```
-
-- Add Apache [configuration file](https://httpd.apache.org/docs/2.2/configuring.html) `catalog.conf`
+- Browsing to the server ip [http://192.241.141.20/](http://192.241.141.20/) should show the "It works!" default Apache page.
+  > Apache2 Ubuntu Default Page
+  >
+  > It works!
+  >
+  > This is the default welcome page used to test the correct operation of the Apache2 server after installation on Ubuntu systems.
+- Add Apache [configuration file](http://httpd.apache.org/docs/current/configuring.html) `catalog.conf`.
+  - `ServerName`: Server's IP address.
+  - `ServerAdmin`: Optionally enter your email address here.
+  - `WSGIDaemonProcess`: Helps the app run when logged in as a different user.
+  - `WSGIScriptAlias`: There is an initial `/`, followed by the absolute file path to the WSGI script.
+  - The `Directory` section grants access to the directory containing the application files.
+  - The `ErrorLog` and `CustomLog` are particularly helpful for debugging.
+- Here's how the completed Apache configuration file will look:
 
   ```shell
   sudo nano /etc/apache2/sites-available/catalog.conf
@@ -694,12 +793,11 @@ In the future, it would be preferable to just use [Docker](https://www.docker.co
     ServerName 192.241.141.20
     ServerAdmin brendon.w.smith@gmail.com
     WSGIDaemonProcess application user=grader threads=3
-    WSGIScriptAlias / /var/www/catalog/catalog.wsgi
+    WSGIScriptAlias / /var/www/catalog/wsgi.py
     <Directory /var/www/catalog/>
       WSGIProcessGroup application
       WSGIApplicationGroup %{GLOBAL}
-      Order deny,allow
-      Allow from all
+      Require all granted
     </Directory>
     ErrorLog ${APACHE_LOG_DIR}/error.log
     LogLevel warn
@@ -714,14 +812,36 @@ In the future, it would be preferable to just use [Docker](https://www.docker.co
   sudo service apache2 restart
   ```
 
-- If needed, logs can be viewed:
+### Hosting
 
-  ```shell
-  sudo locate access.log access_log
-  sudo nano /var/log/apache2/access.log
+- DigitalOcean is not a DNS registrar at this time. I followed the [DigitalOcean DNS tutorial](https://www.digitalocean.com/community/tutorials/an-introduction-to-digitalocean-dns) to add a domain name purchased through [Hover](https://www.hover.com/).
+- From my Hover dashboard, I pointed the domain to DigitalOcean's nameservers.
+
+  ```text
+  ns1.digitalocean.com
+  ns2.digitalocean.com
+  ns3.digitalocean.com
   ```
 
-- I get an error:
+- In my DigitalOcean account, from the Networking tab, I set an A record so that Hostname catalog.br3ndonland.com directs to 192.241.141.20.
+- DigitalOcean doesn't offer SSL either. I will look into SSL in the future.
+
+### Troubleshooting
+
+- If the site isn't working, check logs for errors:
+
+  ```shell
+  sudo tail /var/log/apache2/error.log
+  sudo tail /var/log/apache2/access.log
+  ```
+
+[(Back to top)](#top)
+
+<details><summary>Apache troubleshooting</summary>
+
+#### Apache troubleshooting <!-- omit in toc -->
+
+- I get an error when browsing to the server URL at [http://192.241.141.20/](http://192.241.141.20/):
 
   ```text
   Internal Server Error
@@ -734,7 +854,272 @@ In the future, it would be preferable to just use [Docker](https://www.docker.co
   Apache/2.4.18 (Ubuntu) Server at 192.241.141.20 Port 80
   ```
 
-<details><summary>Attempt with Gunicorn and Nginx</summary>
+- I checked the error log. The most helpful things I could find were:
+
+  ```shell
+  sudo nano /var/log/apache2/error.log
+  ```
+
+  ```text
+  File "/var/www/catalog/catalog.wsgi", line 7, in <module>
+  from application import app as application
+  ImportError: No module named 'application'
+  mod_wsgi (pid=1781): Target WSGI script '/var/www/catalog/catalog.wsgi' cannot be loaded as Python module.
+  mod_wsgi (pid=2078): Exception occurred processing WSGI script '/var/www/catalog/catalog.wsgi'.
+  ```
+
+- I tried changing permissions and it didn't change anything.
+
+  ```shell
+  sudo chmod 644 /etc/apache2/sites-available/catalog.conf
+  sudo service apache2 restart
+  ```
+
+- At this point, I submitted the project again. See [server-review.md](server-review.md).
+- The reviewer recommended the [DigitalOcean How To Deploy a Flask Application on an Ubuntu VPS](https://www.digitalocean.com/community/tutorials/how-to-deploy-a-flask-application-on-an-ubuntu-vps) guide. I had seen it before, but I went through it with the "Hello, World!"-style demo FlaskApp. I couldn't even get the demo app to run. The comments show five years of developers confused and frustrated by the tutorial. See below in "DigitalOcean demo FlaskApp."
+- I spent some time going back through documentation, hoping to find an answer.
+- I found a Stack Overflow thread "[How to install & configure mod_wsgi for py3](https://stackoverflow.com/questions/19344252/how-to-install-configure-mod-wsgi-for-py3)". I had already installed `libapache2-mod-wsgi-py3`. The top answer links out to the [Django 1.8 docs on mod_wsgi](https://docs.djangoproject.com/en/1.8/howto/deployment/wsgi/modwsgi/), which in turn laud the mod_wsgi docs:
+  > The [official mod_wsgi documentation](http://modwsgi.readthedocs.org/) is fantastic; it’s your source for all the details about how to use mod_wsgi.
+- Navigating to the [mod_wsgi project status page](http://modwsgi.readthedocs.io/en/develop/project-status.html) tells a different story:
+  > In general, the documentation is in a bit of a mess right now and somewhat outdated...
+- The [updated Django 2.0 docs](https://docs.djangoproject.com/en/2.1/howto/deployment/wsgi/modwsgi/) are less complementary:
+  > The [official mod_wsgi documentation](https://modwsgi.readthedocs.io/) is your source for all the details about how to use mod_wsgi.
+- Apparently the project is less fantastic than it used to be. None of this is giving me much confidence.
+- The error message `Target WSGI script '/var/www/catalog/catalog.wsgi' cannot be loaded as Python module` suggests that maybe I need to reconfigure the WSGI script as a Python module. I changed the file to *wsgi.py* and updated the Apache configuration file accordingly. Still got the same error message.
+- I started noticing a strange error indicating that the SQLAlchemy module was missing:
+
+  ```shell
+  grader@udacity6:/var/www/catalog$ sudo tail /var/log/apache2/error.log
+  [Sat Jun 16 21:57:03.568120 2018] [wsgi:error] [pid 2503:tid 140707532621568] [client 151.76.182.223:49313]     from sqlalchemy import create_engine
+  [Sat Jun 16 21:57:03.568151 2018] [wsgi:error] [pid 2503:tid 140707532621568] [client 151.76.182.223:49313] ImportError: No module named 'sqlalchemy'
+  ```
+
+- This was a clue that Apache wasn't making use of my virtual environment.
+- **Although it is optimal to have a defined virtual environment for the app, after all the difficulty I have been through up to this point, I decided to just install the required modules without the virtual environment. I made sure *application.py* was running on localhost, restarted Apache, navigated to the IP address for the server, and... it worked!**
+
+  ```shell
+  sudo pip3 install flask
+  sudo pip3 install oauth2client
+  sudo pip3 install psycopg2
+  sudo pip3 install requests
+  sudo pip3 install sqlalchemy
+  python3.6 application.py
+  sudo service apache2 restart
+  ```
+
+- **FINALLY DONE!**
+
+</details>
+
+<details><summary>DigitalOcean demo FlaskApp</summary>
+
+#### DigitalOcean demo FlaskApp <!-- omit in toc -->
+
+- [DigitalOcean How To Deploy a Flask Application on an Ubuntu VPS](https://www.digitalocean.com/community/tutorials/how-to-deploy-a-flask-application-on-an-ubuntu-vps) guide.
+- Walked through the steps exactly.
+- Built the demo app in a different directory on the same server (udacity6, 192.241.141.20).
+- Here's how *FlaskApp.conf* looks:
+
+  ```shell
+  sudo nano /etc/apache2/sites-available/FlaskApp.conf
+  ```
+
+  ```text
+  <VirtualHost *:80>
+      ServerName http://192.241.141.20
+      ServerAdmin admin@mywebsite.com
+      WSGIScriptAlias / /var/www/FlaskApp/flaskapp.wsgi
+      <Directory /var/www/FlaskApp/FlaskApp/>
+        Order allow,deny
+        Allow from all
+      </Directory>
+      Alias /static /var/www/FlaskApp/FlaskApp/static
+      <Directory /var/www/FlaskApp/FlaskApp/static/>
+        Order allow,deny
+        Allow from all
+      </Directory>
+      ErrorLog ${APACHE_LOG_DIR}/error.log
+      LogLevel warn
+      CustomLog ${APACHE_LOG_DIR}/access.log combined
+  </VirtualHost>
+  ```
+
+- I modified the *FlaskApp.wsgi* file to attempt to activate the virtual env, because the tutorial's WSGI file doesn't properly direct to the venv:
+
+  ```shell
+  sudo nano /var/www/FlaskApp/flaskapp.wsgi
+  ```
+
+  ```python
+  activate_this = '/var/www/FlaskApp/FlaskApp/venv/bin/activate_this.py'
+  with open(activate_this) as file_:
+      exec(file_.read(), dict(__file__=activate_this))
+
+  import sys
+  import logging
+  logging.basicConfig(stream=sys.stderr)
+  sys.path.insert(0,"/var/www/FlaskApp/")
+
+  from FlaskApp import app as application
+  application.secret_key = 'Add your secret key'
+  ```
+
+- Still nothing.
+- I got to the step where I was reloading apache, and got
+
+  ```shell
+  grader@udacity6:/var/www/FlaskApp/FlaskApp$ service apache2 reload
+  ==== AUTHENTICATING FOR org.freedesktop.systemd1.manage-units ===
+  Authentication is required to reload 'apache2.service'.
+  Multiple identities can be used for authentication:
+  1.  Brendon Smith,,, (br3ndonland)
+  2.  Udacity Grader,,, (grader)
+  Choose identity to authenticate as (1-2): 2
+  Password:
+  ==== AUTHENTICATION COMPLETE ===
+  Job for apache2.service failed because the control process exited with error code. See "systemctl status apache2.service" and "journalctl -xe" for details.
+  grader@udacity6:/var/www/FlaskApp/FlaskApp$ systemctl status apache2.service
+  ● apache2.service - LSB: Apache2 web server
+    Loaded: loaded (/etc/init.d/apache2; bad; vendor preset: enabled)
+    Drop-In: /lib/systemd/system/apache2.service.d
+            └─apache2-systemd.conf
+    Active: active (running) (Result: exit-code) since Thu 2018-06-14 01:33:12 UTC; 25min ago
+      Docs: man:systemd-sysv-generator(8)
+    Process: 2602 ExecStop=/etc/init.d/apache2 stop (code=exited, status=0/SUCCESS)
+    Process: 2978 ExecReload=/etc/init.d/apache2 reload (code=exited, status=1/FAILURE)
+    Process: 2628 ExecStart=/etc/init.d/apache2 start (code=exited, status=0/SUCCESS)
+      Tasks: 61
+    Memory: 15.1M
+        CPU: 1.885s
+    CGroup: /system.slice/apache2.service
+            ├─2647 /usr/sbin/apache2 -k start
+            ├─2649 /usr/sbin/apache2 -k start
+            ├─2650 /usr/sbin/apache2 -k start
+            └─2651 /usr/sbin/apache2 -k start
+  grader@udacity6:/var/www/FlaskApp/FlaskApp$ sudo journalctl -xe
+  --
+  -- Unit apache2.service has begun reloading its configuration
+  Jun 14 01:58:05 udacity6 apache2[2978]:  * Reloading Apache httpd web server apache2
+  Jun 14 01:58:06 udacity6 apache2[2978]:  *
+  Jun 14 01:58:06 udacity6 apache2[2978]:  * The apache2 configtest failed. Not doing anything.
+  Jun 14 01:58:06 udacity6 apache2[2978]: Output of config test was:
+  Jun 14 01:58:06 udacity6 apache2[2978]: AH00526: Syntax error on line 8 of /etc/apache2/sites-enabled/catalog.conf:
+  Jun 14 01:58:06 udacity6 apache2[2978]: WSGIRestrictStdout not allowed here
+  Jun 14 01:58:06 udacity6 apache2[2978]: Action 'configtest' failed.
+  Jun 14 01:58:06 udacity6 apache2[2978]: The Apache error log may have more information.
+  Jun 14 01:58:06 udacity6 systemd[1]: apache2.service: Control process exited, code=exited status=1
+  Jun 14 01:58:06 udacity6 systemd[1]: Reload failed for LSB: Apache2 web server.
+  -- Subject: Unit apache2.service has finished reloading its configuration
+  -- Defined-By: systemd
+  -- Support: http://lists.freedesktop.org/mailman/listinfo/systemd-devel
+  --
+  -- Unit apache2.service has finished reloading its configuration
+  --
+  -- The result is failed.
+  Jun 14 01:58:06 udacity6 polkitd(authority=local)[1682]: Unregistered Authentication Agent for unix-process:2965:326266
+  Jun 14 01:58:18 udacity6 sudo[2994]:   grader : TTY=pts/2 ; PWD=/var/www/FlaskApp/FlaskApp ; USER=root ; COMMAND=/bin/n
+  Jun 14 01:58:18 udacity6 sudo[2994]: pam_unix(sudo:session): session opened for user root by grader(uid=0)
+  Jun 14 01:58:23 udacity6 sudo[2994]: pam_unix(sudo:session): session closed for user root
+  Jun 14 01:58:50 udacity6 kernel: [UFW BLOCK] IN=eth0 OUT= MAC=aa:5d:6d:bc:91:c3:cc:e1:7f:a8:17:f0:08:00 SRC=185.208.209
+  Jun 14 01:59:27 udacity6 kernel: [UFW BLOCK] IN=eth0 OUT= MAC=aa:5d:6d:bc:91:c3:cc:e1:7f:a8:1b:f0:08:00 SRC=119.10.58.2
+  Jun 14 01:59:45 udacity6 kernel: [UFW BLOCK] IN=eth0 OUT= MAC=aa:5d:6d:bc:91:c3:cc:e1:7f:a8:1b:f0:08:00 SRC=134.119.179
+  Jun 14 01:59:50 udacity6 kernel: [UFW BLOCK] IN=eth0 OUT= MAC=aa:5d:6d:bc:91:c3:cc:e1:7f:a8:1b:f0:08:00 SRC=134.119.179
+  Jun 14 02:00:06 udacity6 kernel: [UFW BLOCK] IN=eth0 OUT= MAC=aa:5d:6d:bc:91:c3:cc:e1:7f:a8:17:f0:08:00 SRC=139.162.178
+  Jun 14 02:01:02 udacity6 kernel: [UFW BLOCK] IN=eth0 OUT= MAC=aa:5d:6d:bc:91:c3:cc:e1:7f:a8:1b:f0:08:00 SRC=134.119.179
+  Jun 14 02:01:35 udacity6 sudo[3007]:   grader : TTY=pts/2 ; PWD=/var/www/FlaskApp/FlaskApp ; USER=root ; COMMAND=/bin/j
+  Jun 14 02:01:35 udacity6 sudo[3007]: pam_unix(sudo:session): session opened for user root by grader(uid=0)
+  ```
+
+- Finally an error I can work with. It looked like *catalog.conf* was actually throwing the error. At this time, in /etc/apache2/sites-enabled/catalog.conf I had
+
+  ```text
+  <VirtualHost *:80>
+    ServerName http://192.241.141.20
+    ServerAdmin brendon.w.smith@gmail.com
+    WSGIDaemonProcess application user=grader threads=3
+    WSGIScriptAlias / /var/www/catalog/catalog.wsgi
+    <Directory /var/www/catalog/>
+      WSGIScriptReloading On
+      WSGIRestrictStdout Off
+      WSGIProcessGroup application
+      WSGIApplicationGroup %{GLOBAL}
+      Require all granted
+    </Directory>
+    ErrorLog ${APACHE_LOG_DIR}/error.log
+    LogLevel warn
+    CustomLog ${APACHE_LOG_DIR}/access.log combined
+  </VirtualHost>
+  ```
+
+- I deleted `WSGIRestrictStdout Off`. Reload successful.
+
+  ```shell
+  grader@udacity6:/var/www/FlaskApp/FlaskApp$ service apache2 reload
+  ==== AUTHENTICATING FOR org.freedesktop.systemd1.manage-units ===
+  Authentication is required to reload 'apache2.service'.
+  Multiple identities can be used for authentication:
+  1.  Brendon Smith,,, (br3ndonland)
+  2.  Udacity Grader,,, (grader)
+  Choose identity to authenticate as (1-2): 2
+  Password:
+  ==== AUTHENTICATION COMPLETE ===
+  ```
+
+- Can't see anything. Went through the comments on the tutorial. Edited the *hosts* file and added `192.241.141.20 flaskapp.dev`:
+
+  ```shell
+  $ sudo nano /etc/hosts
+  # Your system has configured 'manage_etc_hosts' as True.
+  # As a result, if you wish for changes to this file to persist
+  # then you will need to either
+  # a.) make changes to the master file in /etc/cloud/templates/hosts.debian.tmpl
+  # b.) change or remove the value of 'manage_etc_hosts' in
+  #     /etc/cloud/cloud.cfg or cloud-config from user-data
+  #
+  127.0.1.1 udacity6 udacity6
+  127.0.0.1 localhost
+  192.241.141.20 flaskapp.dev
+  # The following lines are desirable for IPv6 capable hosts
+  ::1 ip6-localhost ip6-loopback
+  fe00::0 ip6-localnet
+  ff00::0 ip6-mcastprefix
+  ff02::1 ip6-allnodes
+  ff02::2 ip6-allrouters
+  ff02::3 ip6-allhosts
+  ```
+
+- Still nothing. I get the same internal server error.
+- Using `tail` was more helpful, but I couldn't clearly identify what was going wrong.
+
+  ```shell
+  grader@udacity6:~$ sudo service apache2 restart
+  grader@udacity6:~$ sudo tail /var/log/apache2/error.log
+  [Thu Jun 14 22:54:06.426781 2018] [mpm_event:notice] [pid 7836:tid 140718488364928] AH00489: Apache/2.4.18 (Ubuntu) mod_wsgi/4.3.0 Python/3.5.2 configured -- resuming normal operations
+  [Thu Jun 14 22:54:06.426826 2018] [core:notice] [pid 7836:tid 140718488364928] AH00094: Command line: '/usr/sbin/apache2'
+  [Thu Jun 14 22:54:13.187874 2018] [wsgi:error] [pid 7839:tid 140718390884096] [client 24.13.227.94:50818] mod_wsgi (pid=7839): Target WSGI script '/var/www/FlaskApp/flaskapp.wsgi' cannot be loaded as Python module.
+  [Thu Jun 14 22:54:13.187971 2018] [wsgi:error] [pid 7839:tid 140718390884096] [client 24.13.227.94:50818] mod_wsgi (pid=7839): Exception occurred processing WSGI script '/var/www/FlaskApp/flaskapp.wsgi'.
+  [Thu Jun 14 22:54:13.188308 2018] [wsgi:error] [pid 7839:tid 140718390884096] [client 24.13.227.94:50818] Traceback (most recent call last):
+  [Thu Jun 14 22:54:13.188342 2018] [wsgi:error] [pid 7839:tid 140718390884096] [client 24.13.227.94:50818]   File "/var/www/FlaskApp/flaskapp.wsgi", line 10, in <module>
+  [Thu Jun 14 22:54:13.188347 2018] [wsgi:error] [pid 7839:tid 140718390884096] [client 24.13.227.94:50818]     from FlaskApp import app as application
+  [Thu Jun 14 22:54:13.188355 2018] [wsgi:error] [pid 7839:tid 140718390884096] [client 24.13.227.94:50818]   File "/var/www/FlaskApp/FlaskApp/__init__.py", line 1, in <module>
+  [Thu Jun 14 22:54:13.188359 2018] [wsgi:error] [pid 7839:tid 140718390884096] [client 24.13.227.94:50818]     from flask import Flask
+  [Thu Jun 14 22:54:13.188379 2018] [wsgi:error] [pid 7839:tid 140718390884096] [client 24.13.227.94:50818] ImportError: No module named 'flask'
+  ```
+
+- At this point, the demo app was just interfering with my actual project, so I turned it off.
+
+  ```shell
+  sudo a2dissite FlaskApp
+  sudo service apache2 restart
+  ```
+
+- The tutorial definitely has holes, especially related to the virtual env. Here are a few comments:
+  - > newaccount September 21, 2013: Correct me if I'm wrong but you create a virtualenv and then promptly set up an app which doesn't use the virtualenv... right?
+  - > acronymcreations May 6, 2017: How can I check if the WSGI is actually loading the virtualenv? I'm pretty sure this is what is causing my problems.
+
+</details>
+
+<details><summary>Gunicorn and Nginx</summary>
 
 #### Gunicorn and Nginx <!-- omit in toc -->
 
@@ -839,13 +1224,23 @@ I followed the [instructions](https://www.digitalocean.com/community/tutorials/h
   Job for nginx.service failed because the control process exited with error code. See "systemct1 status nginx.service" and "journalct1 -xe" for details.
   ```
 
-- I couldn't understand the error log.
+- Viewing the logs just shows a 500 server error and isn't helpful.
 - When visiting the server public IP, I get
 
   ```text
   502 Bad Gateway
   nginx/1.10.3 (Ubuntu)
   ```
+
+</details>
+
+<details><summary>Azure</summary>
+
+#### Azure <!-- omit in toc -->
+
+- Review the page on [Configuring Python with Azure App Service Web Apps](https://docs.microsoft.com/en-us/azure/app-service/web-sites-python-configure).
+- Select [Web app with Flask on Linux](https://portal.azure.com/#create/PTVS.FlaskLinux).
+- I instructed Azure to pull the app from my GitHub repo. It seemed to work, but I wasn't sure how to configure the server from there.
 
 </details>
 

@@ -18,6 +18,9 @@ Brendon Smith
   - [Review](#review)
   - [Response](#response)
 - [Second submission](#second-submission)
+  - [Second review](#second-review)
+  - [Second response](#second-response)
+- [Third submission](#third-submission)
 
 ## First submission
 
@@ -124,7 +127,51 @@ Brendon Smith
 
 - [x] **Disable password authentication**: I opened the config file and changed `PasswordAuthentication` to `no`.
 - [x] **Include SSH key**: I included the private SSH key on resubmission, so the reviewer could properly access the project without password authentication.
-- [ ] **Web server on port 80**: The server needed more configuration to properly run Flask. I added notes on further configuration to [server-methods.md](server-methods.md).
+- [ ] **Web server on port 80**: I am still not able to get the app to run. What more can I do? I added notes on further configuration to [server-methods.md](server-methods.md).
 - [ ] **DNS**: [DigitalOcean is not a DNS registrar](https://www.digitalocean.com/community/tutorials/an-introduction-to-digitalocean-dns) at this time. I will consider purchasing a domain name in the future.
 
 ## Second submission
+
+### Second review
+
+#### Summary 2
+
+> You are almost there!
+> Launch these applications can be tricky, but I know you'll get it!
+> If you have any doubts please let us know!
+> Keep it up!
+
+##### User management 2
+
+- [x] The SSH key submitted with the project can be used to log in as grader on the server.
+  - > Awesome! Your SSH key works perfectly!
+- [x] You cannot log in as root remotely.
+- [x] The grader user can run commands using sudo to inspect files that are readable only by root.
+
+##### Security 2
+
+- [x] Only allow connections for SSH (port 2200), HTTP (port 80), and NTP (port 123).
+- [x] Key-based SSH authentication is enforced.
+  - > Great job! Key-based SSH authentication is enforced!
+- [x] All system packages have been updated to most recent versions.
+- [x] SSH is hosted on non-default port.
+
+##### Application functionality 2
+
+- [x] The web server responds on port 80.
+  - > Hey, it may be an error on your WSGI + apache2 configuration.
+  - > Here is [great guide](https://www.digitalocean.com/community/tutorials/how-to-deploy-a-flask-application-on-an-ubuntu-vps) on how to set up your WSGI flask app, it might help you configure your application.
+- [x] Database server has been configured to serve data (PostgreSQL is recommended).
+- [x] Web server has been configured to serve the Item Catalog application as a WSGI app.
+
+##### Documentation 2
+
+- [x] A README file is included in the GitHub repo containing the following information: IP address, URL, summary of software installed, summary of configurations made, and a list of third-party resources used to complete this project.
+
+### Second response
+
+I did it! I got the server configured to run the app, and also set up a domain name. The app is available at [http://catalog.br3ndonland.com/](http://catalog.br3ndonland.com/).
+
+## Third submission
+
+[(Back to top)](#top)

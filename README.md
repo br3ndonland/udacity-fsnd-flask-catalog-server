@@ -21,7 +21,7 @@ In this project, I configured an Ubuntu Linux server instance on [DigitalOcean](
 ## Details
 
 - DigitalOcean server instance: **udacity6**
-- URL:
+- URL: [http://catalog.br3ndonland.com/](http://catalog.br3ndonland.com/)
 - Public IP address: 192.241.141.20
 - SSH port: 2200
 - User: `grader`
@@ -35,6 +35,12 @@ In this project, I configured an Ubuntu Linux server instance on [DigitalOcean](
 
 - Software:
   - [Flask catalog application](https://github.com/br3ndonland/udacity-fsnd-p4-flask-catalog)
-  - Python 3
-  - pip
+  - Python 3.6
+  - Pip
+  - Modules
+    - Flask
+    - oauth2client
+    - psycopg2
+    - Requests
+    - SQLAlchemy
 - See [server-methods.md](info/server-methods.md) for walkthrough.

@@ -21,6 +21,7 @@ Brendon Smith
   - [Second review](#second-review)
   - [Second response](#second-response)
 - [Third submission](#third-submission)
+  - [Third response](#third-response)
 
 ## First submission
 
@@ -173,5 +174,12 @@ Brendon Smith
 I did it! I got the server configured to run the app, and also set up a domain name. The app is available at [http://catalog.br3ndonland.com/](http://catalog.br3ndonland.com/).
 
 ## Third submission
+
+### Third response
+
+> You did it!
+> Congratulations on your project, it is looking great!
+> You have done a great job, you should be proud!
+> Good luck on your career!
 
 [(Back to top)](#top)

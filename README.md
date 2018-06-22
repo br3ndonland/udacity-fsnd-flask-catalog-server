@@ -14,6 +14,8 @@ Brendon Smith
 
 [![license](https://img.shields.io/badge/license-MIT-blue.svg?longCache=true&style=for-the-badge)](https://choosealicense.com/)
 
+![Server project logos: Flask, Ubuntu, Apache](img/server.png)
+
 ## Description
 
 In this project, I configured an Ubuntu Linux server instance on [DigitalOcean](https://www.digitalocean.com/) and deployed a Flask app to the server.
@@ -43,4 +45,5 @@ In this project, I configured an Ubuntu Linux server instance on [DigitalOcean](
     - psycopg2
     - Requests
     - SQLAlchemy
-- See [server-methods.md](info/server-methods.md) for walkthrough.
+- See [server-methods.md](info/server-methods.md) for computational narrative (walkthrough).
+- Figure created in [Figma](https://www.figma.com) with logos from [Flask](http://flask.pocoo.org/community/logos/), [Ubuntu](https://design.ubuntu.com/brand/ubuntu-logo/), and [Apache](https://en.wikipedia.org/wiki/File:Apache_Software_Foundation_Logo_(2016).svg).

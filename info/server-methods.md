@@ -14,6 +14,8 @@ Brendon Smith
 
 [![license](https://img.shields.io/badge/license-MIT-blue.svg?longCache=true&style=for-the-badge)](https://choosealicense.com/)
 
+![Server project logos: Flask, Ubuntu, Apache](../img/server.png)
+
 ## Table of Contents <!-- omit in toc -->
 
 - [Select a server host](#select-a-server-host)
@@ -1245,5 +1247,7 @@ I followed the [instructions](https://www.digitalocean.com/community/tutorials/h
 </details>
 
 For notes on project review, see [server-review.md](server-review.md).
+
+Figure created in [Figma](https://www.figma.com) with logos from [Flask](http://flask.pocoo.org/community/logos/), [Ubuntu](https://design.ubuntu.com/brand/ubuntu-logo/), and [Apache](https://en.wikipedia.org/wiki/File:Apache_Software_Foundation_Logo_(2016).svg).
 
 [(Back to top)](#top)

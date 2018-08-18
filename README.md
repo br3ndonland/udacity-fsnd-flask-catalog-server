@@ -18,26 +18,11 @@ Brendon Smith
 
 ## Description
 
-In this project, I configured an Ubuntu Linux server instance on [DigitalOcean](https://www.digitalocean.com/) and deployed a Flask app to the server.
-
-## Details
-
-- DigitalOcean server instance: **udacity6**
-- URL: [http://catalog.br3ndonland.com/](http://catalog.br3ndonland.com/)
-- Public IP address: 192.241.141.20
-- SSH port: 2200
-- User: `grader`
-- Password: `grader`
-- SSH key: Provided to Udacity reviewer during project submission
-- Log in with
-
-  ```shell
-  ssh grader@192.241.141.20 -p 2200
-  ```
+In this project, I configured an Ubuntu Linux server instance on [DigitalOcean](https://www.digitalocean.com/) and deployed a Flask app to the server. The app is available at [catalog.br3ndonland.com](https://catalog.br3ndonland.com).
 
 - Software:
   - [Flask catalog application](https://github.com/br3ndonland/udacity-fsnd-p4-flask-catalog)
-  - Python 3.6
+  - Python >3.6
   - Pip
   - Modules
     - Flask

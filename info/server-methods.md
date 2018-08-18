@@ -311,6 +311,9 @@ The [DigitalOcean Initial Server Setup with Ubuntu 16.04 tutorial](https://www.d
   usermod -aG sudo grader
   ```
 
+- Users can be deleted later with `[userdel](http://manpages.ubuntu.com/manpages/trusty/man8/userdel.8.html)` or `deluser`: `userdel grader`.
+- View list of users with `cut -d: -f1 /etc/passwd`
+
 ## Set up SSH
 
 - See the [DigitalOcean How To Connect To Your Droplet with SSH](https://www.digitalocean.com/community/tutorials/how-to-connect-to-your-droplet-with-ssh) guide.

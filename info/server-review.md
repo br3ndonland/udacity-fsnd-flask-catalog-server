@@ -182,4 +182,10 @@ I did it! I got the server configured to run the app, and also set up a domain n
 > You have done a great job, you should be proud!
 > Good luck on your career!
 
+Logging in shows the IP of the grader who accessed the server:
+
+```text
+Last login: Sat Jun 16 22:13:39 2018 from 24.13.227.94
+```
+
 [(Back to top)](#top)

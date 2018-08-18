@@ -28,7 +28,8 @@ Brendon Smith
   - [Clone app files](#clone-app-files)
   - [Set up Python environment](#set-up-python-environment)
   - [Configure web server](#configure-web-server)
-  - [Hosting](#hosting)
+  - [Domain name](#domain-name)
+  - [SSL](#ssl)
   - [Troubleshooting](#troubleshooting)
 
 ## Select a server host
@@ -794,7 +795,7 @@ In the future, it would be preferable to just use [Docker](https://www.docker.co
   <VirtualHost *:80>
     ServerName 192.241.141.20
     ServerAdmin brendon.w.smith@gmail.com
-    WSGIDaemonProcess application user=grader threads=3
+    WSGIDaemonProcess application user=br3ndonland threads=3
     WSGIScriptAlias / /var/www/catalog/wsgi.py
     <Directory /var/www/catalog/>
       WSGIProcessGroup application
@@ -814,7 +815,7 @@ In the future, it would be preferable to just use [Docker](https://www.docker.co
   sudo service apache2 restart
   ```
 
-### Hosting
+### Domain name
 
 - DigitalOcean is not a DNS registrar at this time. I followed the [DigitalOcean DNS tutorial](https://www.digitalocean.com/community/tutorials/an-introduction-to-digitalocean-dns) to add a domain name purchased through [Hover](https://www.hover.com/).
 - From my Hover dashboard, I pointed the domain to DigitalOcean's nameservers.
@@ -825,8 +826,109 @@ In the future, it would be preferable to just use [Docker](https://www.docker.co
   ns3.digitalocean.com
   ```
 
-- In my DigitalOcean account, from the Networking tab, I set an A record so that Hostname catalog.br3ndonland.com directs to 192.241.141.20.
-- DigitalOcean doesn't offer SSL either. I will look into SSL in the future.
+- In my DigitalOcean account, from the Networking tab, I set an A record (for ipv4) and an AAAA record (for ipv6) so that the hostname catalog.br3ndonland.com directs to the server's IP.
+
+### SSL
+
+- Deploy a [Let's Encrypt](https://letsencrypt.org/) certificate with [Certbot](https://certbot.eff.org/).
+- **SSL traffic is routed through port 443.** Add port 443 to the uncomplicated firewall allow list with `sudo ufw allow 443`.
+
+<details><summary>Walkthrough</summary>
+
+- After completing the project, I installed an SSL certificate. DigitalOcean doesn't offer SSL on base-level droplets. They do have it for [load balancers](https://www.digitalocean.com/docs/networking/load-balancers/how-to/lets-encrypt/). I installed an SSL certificate with Letsencrypt and the `certbot` tool.
+- The `certbot` advised me to remove a line of the *catalog.conf* Apache configuration file.
+
+  ```text
+  AH00526: Syntax error on line 4 of /etc/apache2/sites-enabled/catalog.conf:
+  Name duplicates previous WSGI daemon definition.
+  ```
+
+- The certification worked after that.
+
+  ```text
+  Congratulations! You have successfully enabled https://catalog.br3ndonland.com
+
+  You should test your configuration at:
+  https://www.ssllabs.com/ssltest/analyze.html?d=catalog.br3ndonland.com
+  ```
+
+- Although the letsencrypt `certbot` was successful, I couldn't access the site, so the SSLlabs test failed. I started troubleshooting by looking at the Apache configuration files. Certbot copies the Apache configuration automatically from `/etc/apache2/sites-enabled/catalog.conf` to `/etc/apache2/sites-enabled/catalog-le-ssl.conf`.
+
+  ```text
+  $ sudo nano /etc/apache2/sites-enabled/catalog.conf
+    <VirtualHost *:80>
+        ServerName 192.241.141.20
+        ServerAdmin brendon.w.smith@gmail.com
+        WSGIScriptAlias / /var/www/catalog/wsgi.py
+        <Directory /var/www/catalog/>
+          WSGIProcessGroup application
+          WSGIApplicationGroup %{GLOBAL}
+          Require all granted
+        </Directory>
+        ErrorLog ${APACHE_LOG_DIR}/error.log
+        LogLevel warn
+        CustomLog ${APACHE_LOG_DIR}/access.log combined
+    RewriteEngine on
+    RewriteCond %{SERVER_NAME} =catalog.br3ndonland.com [OR]
+    RewriteCond %{SERVER_NAME} =192.241.141.20
+    RewriteRule ^ https://%{SERVER_NAME}%{REQUEST_URI} [END,NE,R=permanent]
+    </VirtualHost>
+  $ sudo nano /etc/apache2/sites-enabled/catalog-le-ssl.conf
+    <IfModule mod_ssl.c>
+    <VirtualHost *:443>
+        ServerName 192.241.141.20
+        ServerAdmin brendon.w.smith@gmail.com
+        WSGIScriptAlias / /var/www/catalog/wsgi.py
+        <Directory /var/www/catalog/>
+          WSGIProcessGroup application
+          WSGIApplicationGroup %{GLOBAL}
+          Require all granted
+        </Directory>
+        ErrorLog ${APACHE_LOG_DIR}/error.log
+        LogLevel warn
+        CustomLog ${APACHE_LOG_DIR}/access.log combined
+    ServerAlias catalog.br3ndonland.com
+    SSLCertificateFile /etc/letsencrypt/live/catalog.br3ndonland.com/fullchain.pem
+    SSLCertificateKeyFile /etc/letsencrypt/live/catalog.br3ndonland.com/privkey.pem
+    Include /etc/letsencrypt/options-ssl-apache.conf
+    </VirtualHost>
+    </IfModule>
+  ```
+
+- After reading Domain Name Sanity and [this](https://community.letsencrypt.org/t/cant-reach-site-with-https-took-too-long-to-respond/69575), I learned that **SSL traffic is routed through port 443.** I remembered that I had reconfigured the ports for the Udacity project. I added port 443.
+
+  ```text
+  sudo ufw allow 443
+  sudo ufw status
+  ```
+
+- I at least got the Apache internal server error page back. Now I can check the error logs. I had to add back the `WSGIDaemonProcess` that Certbot told me to take out. I only had to add it to *catalog.conf* and not *catalog-le-ssl.conf*. I switched it to `br3ndonland` in case I delete the user `grader`.
+
+  ```text
+  $ sudo nano /etc/apache2/sites-enabled/catalog.conf
+  <VirtualHost *:80>
+      ServerName 192.241.141.20
+      ServerAdmin brendon.w.smith@gmail.com
+      WSGIDaemonProcess application user=br3ndonland threads=3
+      WSGIScriptAlias / /var/www/catalog/wsgi.py
+      <Directory /var/www/catalog/>
+        WSGIProcessGroup application
+        WSGIApplicationGroup %{GLOBAL}
+        Require all granted
+      </Directory>
+      ErrorLog ${APACHE_LOG_DIR}/error.log
+      LogLevel warn
+      CustomLog ${APACHE_LOG_DIR}/access.log combined
+  RewriteEngine on
+  RewriteCond %{SERVER_NAME} =catalog.br3ndonland.com [OR]
+  RewriteCond %{SERVER_NAME} =192.241.141.20
+  RewriteRule ^ https://%{SERVER_NAME}%{REQUEST_URI} [END,NE,R=permanent]
+  </VirtualHost>
+  ```
+
+- My [app](https://catalog.br3ndonland.com/) finally shows up over SSL!
+
+</details>
 
 ### Troubleshooting
 
@@ -1243,6 +1345,10 @@ I followed the [instructions](https://www.digitalocean.com/community/tutorials/h
 - Review the page on [Configuring Python with Azure App Service Web Apps](https://docs.microsoft.com/en-us/azure/app-service/web-sites-python-configure).
 - Select [Web app with Flask on Linux](https://portal.azure.com/#create/PTVS.FlaskLinux).
 - I instructed Azure to pull the app from my GitHub repo. It seemed to work, but I wasn't sure how to configure the server from there.
+
+</details>
+
+<details><summary>SSL</summary>
 
 </details>
 

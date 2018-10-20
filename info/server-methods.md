@@ -28,9 +28,11 @@ Brendon Smith
   - [Clone app files](#clone-app-files)
   - [Set up Python environment](#set-up-python-environment)
   - [Configure web server](#configure-web-server)
-  - [Domain name](#domain-name)
-  - [SSL](#ssl)
-  - [Troubleshooting](#troubleshooting)
+- [Domain name](#domain-name)
+- [SSL](#ssl)
+- [Database maintenance](#database-maintenance)
+- [Docker deployment](#docker-deployment)
+- [Troubleshooting](#troubleshooting)
 
 ## Select a server host
 
@@ -48,13 +50,13 @@ The Lightsail SSH client opens a terminal window in the browser. It frequently d
 
 ### Connect with desktop SSH client <!-- omit in toc -->
 
-```shell
+```sh
 ssh -i ~/.ssh/udacity_key.pem ubuntu@52.14.148.231
 ```
 
 I saved the private key file to `~/.ssh`, and attempted to connect to the server. My connection attempt was rejected because the private key was unprotected. Note that the IP was for a previous instance that I got locked out of after I changed the port. I had to destroy it and and create a new one.
 
-```shell
+```sh
 $ ssh -i ~/.ssh/udacity_key.pem ubuntu@52.14.148.231
 
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
@@ -67,7 +69,7 @@ This private key will be ignored.
 
 I knew the `chmod` command from prior experience, but wasn't sure which permissions were needed. Based on a Stack Exchange [superuser post](https://superuser.com/a/1261781), I changed permissions to 600, tried logging in again, and it worked.
 
-```shell
+```sh
 cd ~/.ssh
 chmod 600 udacity_key.pem
 ssh -i ~/.ssh/udacity_key.pem ubuntu@52.14.148.231
@@ -79,7 +81,7 @@ Logout with `exit` when done.
 
 ### Update and upgrade Ubuntu packages <!-- omit in toc -->
 
-```shell
+```sh
 sudo apt update
 sudo apt upgrade
 sudo reboot
@@ -87,7 +89,7 @@ sudo reboot
 
 ### Set time zone to UTC  <!-- omit in toc -->
 
-```shell
+```sh
 sudo dpkg-reconfigure tzdata
 ```
 
@@ -97,13 +99,13 @@ Select "None of these," then find UTC in the list and press enter.
 
 - Install `finger` to easily read user info:
 
-  ```shell
+  ```sh
   sudo apt install finger
   ```
 
 - Create a new user account named `grader`.
 
-  ```shell
+  ```sh
   sudo adduser grader
   ```
 
@@ -114,7 +116,7 @@ Select "None of these," then find UTC in the list and press enter.
 - Give `grader` the permission to sudo.
   - Create a file with nano
 
-    ```shell
+    ```sh
     sudo nano /etc/sudoers.d/grader
     ```
 
@@ -128,7 +130,7 @@ Select "None of these," then find UTC in the list and press enter.
   - Open another terminal window, and don't log in to the server.
   - Generate ssh key on local machine with `ssh-keygen`.
 
-    ```shell
+    ```sh
     ssh-keygen -f ~/.ssh/udacity_key_grader
     ```
 
@@ -139,14 +141,14 @@ Select "None of these," then find UTC in the list and press enter.
 
 - Copy the public key (`udacity_key_grader.pub`) from local machine to remote Ubuntu server with `ssh-copy-id` and user `ubuntu`.
 
-  ```shell
+  ```sh
   ssh-copy-id -i ~/.ssh/udacity_key_grader.pub ubuntu@52.14.148.231
   ```
 
   - Ensure the ~/.ssh/config file is set up to allow public key authentication. See [askubuntu](https://askubuntu.com/questions/311558/ssh-permission-denied-publickey) for info.
   - At this point, you should be able to ssh with the default `ubuntu` user and the *private* key that pairs with the public key you uploaded. Attempting to log in as `grader` at this point will still result in `Permission denied (publickey).`
 
-    ```shell
+    ```sh
     $ ssh -i ~/.ssh/udacity_key_grader -p 22 grader@52.14.148.231
     grader@52.14.148.231: Permission denied (publickey).
     $ ssh -i ~/.ssh/udacity_key_grader -p 22 ubuntu@52.14.148.231
@@ -157,27 +159,27 @@ Select "None of these," then find UTC in the list and press enter.
   - Compare the local and remote public keys to verify.
     - Local:
 
-      ```shell
+      ```sh
       nano ~/.ssh/udacity_key_grader.pub
       ```
 
     - Remote:
 
-      ```shell
+      ```sh
       sudo nano /root/.ssh/authorized_keys
       ```
 
     - You should see the same text after `ssh-rsa`.
 - Make a `.ssh` directory for user `grader` and copy the public key from user `ubuntu` to user `grader`.
 
-  ```shell
+  ```sh
   sudo mkdir /home/grader/.ssh
   sudo cp /root/.ssh/authorized_keys /home/grader/.ssh/authorized_keys
   ```
 
   - Verify that the public key has copied from user `ubuntu` to user `grader`.
 
-    ```shell
+    ```sh
     sudo nano /home/grader/.ssh/authorized_keys
     ```
 
@@ -189,7 +191,7 @@ Configure Uncomplicated Firewall (UFW) and set ports. Also see [Ubuntu Server Gu
 - Deny incoming connections by default.
 - Allow outgoing connections by default.
 
-  ```shell
+  ```sh
   sudo ufw status
   sudo ufw default deny incoming
   sudo ufw default allow outgoing
@@ -197,7 +199,7 @@ Configure Uncomplicated Firewall (UFW) and set ports. Also see [Ubuntu Server Gu
 
 - Configure the Uncomplicated Firewall (UFW) to only allow incoming connections for SSH (port 2200), HTTP (port 80), and NTP (port 123).
 
-  ```shell
+  ```sh
   sudo ufw allow 2200/tcp
   sudo ufw allow 80/tcp
   sudo ufw allow 123/udp
@@ -206,7 +208,7 @@ Configure Uncomplicated Firewall (UFW) and set ports. Also see [Ubuntu Server Gu
 - Change SSH port from 22 to 2200
   - Open the configuration file
 
-    ```shell
+    ```sh
     ubuntu@ip-172-26-10-184:~$ sudo nano /etc/ssh/sshd_config
     ```
 
@@ -237,7 +239,7 @@ Configure Uncomplicated Firewall (UFW) and set ports. Also see [Ubuntu Server Gu
   - I got locked out once, and had to destroy the server instance. After this, plus the annoyance with SSH keys, I switched to DigitalOcean.
 - Enable firewall
 
-  ```shell
+  ```sh
   sudo ufw enable
   ```
 
@@ -275,7 +277,7 @@ The [DigitalOcean Initial Server Setup with Ubuntu 16.04 tutorial](https://www.d
 - Ready to go! Wow, that was so much easier than Amazon Lightsail.
 - Update and upgrade packages, then reboot
 
-  ```shell
+  ```sh
   sudo apt update
   sudo apt upgrade
   sudo reboot
@@ -283,7 +285,7 @@ The [DigitalOcean Initial Server Setup with Ubuntu 16.04 tutorial](https://www.d
 
 - Set time zone to UTC:
 
-  ```shell
+  ```sh
   sudo dpkg-reconfigure tzdata
   ```
 
@@ -297,14 +299,14 @@ The [DigitalOcean Initial Server Setup with Ubuntu 16.04 tutorial](https://www.d
 - I continued by following the [DigitalOcean Initial Server Setup with Ubuntu 16.04 tutorial](https://www.digitalocean.com/community/tutorials/initial-server-setup-with-ubuntu-16-04).
 - The first step is logging in as root:
 
-  ```shell
+  ```sh
   ssh root@192.241.141.20
   ```
 
 - At this point, root can log in with the password sent to your email address by DigitalOcean, and you can then change the password after login.
 - After logging in as root, I created two users: `br3ndonland` for me and `grader` for the Udacity grader. I left the `grader` password `grader`. I gave each user `sudo` privileges.
 
-  ```shell
+  ```sh
   adduser br3ndonland
   adduser grader
   usermod -aG sudo br3ndonland
@@ -319,16 +321,19 @@ The [DigitalOcean Initial Server Setup with Ubuntu 16.04 tutorial](https://www.d
 - See the [DigitalOcean How To Connect To Your Droplet with SSH](https://www.digitalocean.com/community/tutorials/how-to-connect-to-your-droplet-with-ssh) guide.
 - I [generated an SSH key and added it to the SSH agent](https://help.github.com/articles/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent/) *on my local machine,* with the method recommended by GitHub, which attaches your email instead of the local machine name. The config file may need to be manually created with `touch ~/.ssh/config` first. I named the key `udacity6`.
 
-  ```shell
-  touch ~/.ssh/config
-  ssh-keygen -t rsa -b 4096 -C "your_email@example.com"
-  eval "$(ssh-agent -s)"
-  ssh-add -K ~/.ssh/udacity6
+  ```sh
+  $ touch ~/.ssh/config
+  $ ssh-keygen -t rsa -b 4096 -C "your_email@example.com"
+    # Enter file in which to save the key (/Users/br3ndonland/.ssh/id_rsa):/Users/br3ndonland/.ssh/udacity
+    # Your identification has been saved in /Users/br3ndonland/.ssh/udacity.
+    # Your public key has been saved in /Users/br3ndonland/.ssh/udacity.pub.
+  $ eval "$(ssh-agent -s)"
+  $ ssh-add -K ~/.ssh/udacity6
   ```
 
 - I copied the SSH key to the server for each user with `ssh-copy-id`. **Note that `ssh-copy-id` relies on password authentication, so if you disable password authentication this won't work.** Copy the SSH ID and verify login before disabling password authentication. If you have already reconfigured your ssh port to 2200, add `-p 2200`. Also, be sure to reference the *private* key when using `ssh-copy-id`, and not the public key (in this example, *udacity6* instead of *udacity6.pub*).
 
-  ```shell
+  ```sh
   ssh-copy-id -i ~/.ssh/udacity6 br3ndonland@192.241.141.20
   ssh br3ndonland@192.241.141.20
   exit
@@ -346,7 +351,7 @@ The [DigitalOcean Initial Server Setup with Ubuntu 16.04 tutorial](https://www.d
 
 - I did this as user `grader` with `sudo`.
 
-  ```shell
+  ```sh
   sudo ufw app list
   sudo ufw allow OpenSSH
   sudo ufw allow 2200
@@ -378,7 +383,7 @@ The [DigitalOcean Initial Server Setup with Ubuntu 16.04 tutorial](https://www.d
   - We were required to do this for the Udacity project.
   - Open the configuration file and edit the file with the nano text editor.
 
-    ```shell
+    ```sh
     sudo nano /etc/ssh/sshd_config
     ```
 
@@ -398,19 +403,20 @@ The [DigitalOcean Initial Server Setup with Ubuntu 16.04 tutorial](https://www.d
   - Save and quit with ctrl+x.
   - Restart SSH
 
-    ```shell
+    ```sh
     sudo systemctl reload sshd
-    service ssh restart
+    sudo service ssh restart
     ```
 
   - Exit and log back in, this time specifying port 2200.
 
-    ```shell
+    ```sh
+    logout
     ssh grader@192.241.141.20 -p 2200
     ```
 - The *~/.ssh/config* file on your local machine can also be configured for easier login. This file is on my local machine, so I was able to to open it with vscode.
 
-  ```shell
+  ```sh
   $ code ~/.ssh/config
   ```
 
@@ -451,13 +457,15 @@ The [DigitalOcean Initial Server Setup with Ubuntu 16.04 tutorial](https://www.d
 
 DigitalOcean has helpful documentation for the Linux server itself, but less documentation for applications. They have [one-click app support for Django](https://www.digitalocean.com/community/tutorials/how-to-use-the-django-one-click-install-image-for-ubuntu-16-04), but not for Flask. There were a few community articles on Flask.
 
-In the future, it would be preferable to just use [Docker](https://www.docker.com), or at least automate the server creation and app deployment process with shell scripts.
+After completing the project, I re-deployed the app with [Docker](https://www.docker.com). See [below](#docker-deployment).
+
+For future deployments, it is also helpful to automate the server creation and app deployment process with shell scripts.
 
 ### Configure PostgreSQL
 
-- My app uses SQLite, but apparently Postgres must be installed in order to create and manage the application database. Note the prompt changes after logging in to the database.
+- My app uses SQLite, but Postgres is a more flexible choice for a multi-user application database. Create a PostgreSQL database for the app. The `psql` command activates the SQL interpreter, and the words in capital letters are SQL commands. Note the prompt changes after logging in to the database.
 
-  ```shell
+  ```sh
   $ sudo apt-get install libpq5
   $ sudo apt-get install postgresql
   $ sudo su - postgres
@@ -482,20 +490,21 @@ In the future, it would be preferable to just use [Docker](https://www.docker.co
   logout
   ```
 
+- See below for more info on [database maintenance](#database-maintenance).
 - Changing from SQLite to PostgreSQL will require installation of `psycopg2` after Python is installed.
 
 ### Clone app files
 
 - Git should already be installed.
 
-  ```shell
+  ```sh
   $ which git
   /usr/bin/git
   ```
 
 - Clone [app repo](https://github.com/br3ndonland/udacity-fsnd-p4-flask-catalog) and create directory in a single step:
 
-  ```shell
+  ```sh
   sudo git clone git://github.com/br3ndonland/udacity-fsnd-p4-flask-catalog.git /var/www/catalog
   ```
 
@@ -507,7 +516,7 @@ In the future, it would be preferable to just use [Docker](https://www.docker.co
 
 - Change owner of catalog directory:
 
-  ```shell
+  ```sh
   sudo chown -R grader:grader /var/www/catalog
   ```
 
@@ -517,7 +526,7 @@ In the future, it would be preferable to just use [Docker](https://www.docker.co
 
 - Copy the client secret from your [Google Cloud APIs credentials dashboard](https://console.cloud.google.com/apis/credentials) into the *client_secrets.json* file on the server. Make sure the server's IP, and your domain name if you have one, have been added to the "Authorized JavaScript origins" and "Authorized redirect URIs."
 
-  ```shell
+  ```sh
   cd /var/www/catalog
   sudo touch client_secrets.json
   sudo nano client_secrets.json
@@ -527,7 +536,7 @@ In the future, it would be preferable to just use [Docker](https://www.docker.co
   - Move `app.secret_key` out of the `if __name__ == '__main__'` block (which will not be used by the WSGI server), as recommended [here](https://stackoverflow.com/a/33898263).
   - Change paths to the *client_secrets.json* file, and any other external files, to absolute. Remember to modify the path in the Google Sign-In code.
 
-  ```shell
+  ```sh
   cd /var/www/catalog
   sudo nano application.py
   ```
@@ -582,7 +591,7 @@ In the future, it would be preferable to just use [Docker](https://www.docker.co
   - My virtual environment requires Python 3.6, which is not available from Ubuntu apt yet. Python 3.6 must be installed as a third-party application.
   - I followed the instructions [here](https://askubuntu.com/a/865569) to install:
 
-    ```shell
+    ```sh
     sudo add-apt-repository ppa:deadsnakes/ppa
     sudo apt update
     sudo apt install python3.6
@@ -592,7 +601,7 @@ In the future, it would be preferable to just use [Docker](https://www.docker.co
 
 - Install pip
 
-  ```shell
+  ```sh
   sudo apt install python3-pip
   ```
 
@@ -602,7 +611,7 @@ In the future, it would be preferable to just use [Docker](https://www.docker.co
 
 - Install required packages
 
-  ```shell
+  ```sh
   sudo pip3 install flask
   sudo pip3 install oauth2client
   sudo pip3 install psycopg2
@@ -612,7 +621,7 @@ In the future, it would be preferable to just use [Docker](https://www.docker.co
 
 - Run application files
 
-  ```shell
+  ```sh
   python3.6 database_setup.py
   python3.6 database_data.py
   python3.6 application.py
@@ -629,7 +638,7 @@ In the future, it would be preferable to just use [Docker](https://www.docker.co
 - Python 3 is bundled with the `venv` module for creation of virtual environments. I already had my GitHub repo set up with `venv`.
 - The plan was to run this:
 
-  ```shell
+  ```sh
   cd <PATH>
   python3.6 -m venv venv
   # activate virtual env
@@ -650,13 +659,13 @@ In the future, it would be preferable to just use [Docker](https://www.docker.co
 
 - Install pipenv
 
-  ```shell
+  ```sh
   sudo pip3 install pipenv
   ```
 
 - Initialize pipenv, specifying the path to python 3.6. Pipenv will install the package dependencies.
 
-  ```shell
+  ```sh
   cd /var/www/catalog
   grader@udacity6:/var/www/catalog$ pipenv install --python /usr/bin/python3.6
   Creating a virtualenv for this project…
@@ -676,13 +685,13 @@ In the future, it would be preferable to just use [Docker](https://www.docker.co
 
 - Spawn a pipenv shell
 
-  ```shell
+  ```sh
   pipenv shell
   ```
 
 - Run application files. Note that, within the `pipenv`, it is not necessary to specify `python3.6`, because the env specifies the Python version.
 
-  ```shell
+  ```sh
   # ensure pipenv shell is activated
   (catalog-1BsMKvn0) grader@udacity6:/var/www/catalog$ python database_setup.py
   Database created.
@@ -717,7 +726,7 @@ In the future, it would be preferable to just use [Docker](https://www.docker.co
 
 - The Flask app can also be run by pipenv without entering the pipenv shell:
 
-  ```shell
+  ```sh
   grader@udacity6:/var/www/catalog$ pipenv run application.py
   ```
 
@@ -746,7 +755,7 @@ In the future, it would be preferable to just use [Docker](https://www.docker.co
     - Name main block: This seems to be used instead of the name/main block in the main application file. I added the filesystem session type as recommended [here](https://stackoverflow.com/a/33898263).
 - Here's what a completed WSGI script should look like:
 
-  ```shell
+  ```sh
   sudo nano /var/www/catalog/wsgi.py
   ```
 
@@ -769,7 +778,7 @@ In the future, it would be preferable to just use [Docker](https://www.docker.co
 - Install and configure Apache to serve a Python `mod_wsgi` application. The [Flask docs](http://flask.pocoo.org/docs/1.0/deploying/mod_wsgi/) have some simple instructions.
 - Install Apache and Python 3 `mod_wsgi`
 
-  ```shell
+  ```sh
   sudo apt-get install apache2
   sudo apt-get install libapache2-mod-wsgi-py3
   ```
@@ -790,7 +799,7 @@ In the future, it would be preferable to just use [Docker](https://www.docker.co
   - The `ErrorLog` and `CustomLog` are particularly helpful for debugging.
 - Here's how the completed Apache configuration file will look:
 
-  ```shell
+  ```sh
   sudo nano /etc/apache2/sites-available/catalog.conf
   ```
 
@@ -813,12 +822,14 @@ In the future, it would be preferable to just use [Docker](https://www.docker.co
 
 - Enable virtual host (should only need to be done once):
 
-  ```shell
+  ```sh
   sudo a2ensite catalog
   sudo service apache2 restart
   ```
 
-### Domain name
+[(Back to top)](#top)
+
+## Domain name
 
 - DigitalOcean is not a DNS registrar at this time. I followed the [DigitalOcean DNS tutorial](https://www.digitalocean.com/community/tutorials/an-introduction-to-digitalocean-dns) to add a domain name purchased through [Hover](https://www.hover.com/).
 - From my Hover dashboard, I pointed the domain to DigitalOcean's nameservers.
@@ -831,7 +842,9 @@ In the future, it would be preferable to just use [Docker](https://www.docker.co
 
 - In my DigitalOcean account, from the Networking tab, I set an A record (for ipv4) and an AAAA record (for ipv6) so that the hostname catalog.br3ndonland.com directs to the server's IP.
 
-### SSL
+[(Back to top)](#top)
+
+## SSL
 
 - Deploy a [Let's Encrypt](https://letsencrypt.org/) certificate with [Certbot](https://certbot.eff.org/).
 - **SSL traffic is routed through port 443.** Add port 443 to the uncomplicated firewall allow list with `sudo ufw allow 443`.
@@ -933,11 +946,184 @@ In the future, it would be preferable to just use [Docker](https://www.docker.co
 
 </details>
 
-### Troubleshooting
+[(Back to top)](#top)
+
+## Database maintenance
+
+- The database be explored and maintained with SQL commands, as in [udacity-fsnd-p3-sql](https://github.com/br3ndonland/udacity-fsnd-p3-sql/blob/master/logs-methods.md#starting-the-virtual-machine-and-exploring-the-data). Also see my [notes from the Udacity Intro to Relational Databases course](https://github.com/br3ndonland/udacity-fsnd/blob/master/3-back-end/rdb-sql.md).
+- I noticed that someone logged in to my app and added a category I didn't want there. The app only allows the creator to edit or delete, so I deleted the category with PostgreSQL instead.
+
+  ```text
+  br3ndonland@udacity6:~$ sudo su - postgres
+  postgres@udacity6:~$ psql -d catalog
+  psql (9.5.14)
+  Type "help" for help.
+
+  catalog=# \dt
+            List of relations
+  Schema |    Name    | Type  |  Owner
+  --------+------------+-------+---------
+  public | categories | table | catalog
+  public | items      | table | catalog
+  public | users      | table | catalog
+  (3 rows)
+
+  catalog=# select * from users;
+  id |     name      |           email
+  ----+---------------+---------------------------
+    1 | Brendon Smith | brendon.w.smith@gmail.com
+    2 | Utkarsh Garg  | g.utk1801@gmail.com
+    3 |               | satkyyy@gmail.com
+    4 | Sagar Parre   | parresagar@gmail.com
+  (4 rows)
+
+  catalog=# select * from categories;
+  id |    name     | creator_db_id
+  ----+-------------+---------------
+    1 | Equipment   |             1
+    2 | Accessories |             1
+    3 | gfgfb       |             4
+  (3 rows)
+
+  catalog=# delete from categories where id = 3;
+  DELETE 1
+  catalog=# select * from categories;
+  id |    name     | creator_db_id
+  ----+-------------+---------------
+    1 | Equipment   |             1
+    2 | Accessories |             1
+  (2 rows)
+  ```
+
+- I noticed that the RumbleRoller photo was no longer available from the website, so I changed the photo URL to point to the local version I previously saved:
+
+  ```text
+  catalog=# update items set photo_url = '/static/img/item-rumbleroller-godeeper-1920x390.jpg' where id = 5;
+  UPDATE 1
+  catalog=#
+  ```
+
+[(Back to top)](#top)
+
+## Docker deployment
+
+After completing and deploying the [application](https://github.com/br3ndonland/udacity-fsnd-p4-flask-catalog), I learned how to use Docker and assembled the application into a [Docker](https://www.docker.com/) container. See [*flask-catalog-methods.md*](https://github.com/br3ndonland/udacity-fsnd-p4-flask-catalog/blob/master/info/flask-catalog-methods.md#docker-container) for info on initial setup of the Docker container.
+
+### Server setup
+
+- I set up a [DigitalOcean One-Click Docker server](https://www.digitalocean.com/products/one-click-apps/docker/). The "One-Click" marketing is a little misleading, and the [docs](https://www.digitalocean.com/docs/one-clicks/docker/) were not particularly helpful. **It might be one click to start the server, but then it's about a thousand clicks and keystrokes to actually get an app running.**
+- I logged in as root through the DigitalOcean browser console using the info emailed to me by DigitalOcean. After logging in, the following notice is displayed:
+
+  ```text
+  Welcome to DigitalOcean's One-Click Docker Droplet.
+  To keep this Droplet secure, the UFW firewall is enabled.
+  All ports are BLOCKED except 22 (SSH), 2375 (Docker) and 2376 (Docker).
+
+  * The Docker One-Click Quickstart guide is available at:
+    https://do.co/docker1804#start
+
+  * You can SSH to this Droplet in a terminal as root: ssh root@<ip>
+
+  * Docker is installed and configured per Docker's recommendations:
+    https://docs.docker.com/install/linux/docker-ce/ubuntu/
+
+  * Docker Compose is installed and configured per Docker's recommendations:
+    https://docs.docker.com/compose/install/#install-compose
+
+  For help and more information, visit http://do.co/docker1804
+  ```
+
+- As with the standard Linux server described above, I [set up SSH](#set-up-ssh), opened the configuration file to disable password authentication and root login, restarted ssh, and logged back in.
+
+  ```sh
+  $ sudo nano /etc/ssh/sshd_config
+    PasswordAuthentication no
+    PermitRootLogin no
+  $ sudo systemctl reload sshd
+  $ sudo service ssh restart
+  $ logout
+  $ ssh br3ndonland@<ip>
+  ```
+
+- I saved the SSH profile on my local machine as `udacity`.
+- I guess the server is set up to just run docker containers, because it doesn't have any directories.
+
+  ```sh
+  $ ssh udacity
+  br3ndonland@udacity:~$ ls
+
+  ```
+
+### Cloud build Docker container
+
+- An **image** is the executable set of files used by Docker.
+- A **container** is a running image.
+- Now that the server is set up, I need to store the Docker container in a registry. I used [Docker Cloud](https://cloud.docker.com) for this.
+- I simply logged in, gave Docker Cloud access to my GitHub repo, and set it to build every time a commit is made.
+- [Google Cloud Platform Container Registry](https://cloud.google.com/container-registry/) is another option I used for the [MBTAccess](https://github.com/growwithgooglema/mbtaccess) app.
+
+### Pull Docker image
+
+- Next, I need to pull the Docker image onto the server. I logged into the server with SSH, searched the Docker Container Registry, and pulled the image on to the server.
+
+  ```sh
+  $ ssh udacity
+  br3ndonland@udacity:~$ sudo docker search br3ndonland
+  br3ndonland@udacity:~$ sudo docker pull br3ndonland/udacity-fsnd-p4-flask-catalog
+  br3ndonland@udacity:~$ sudo docker image ls
+  REPOSITORY                                  TAG                 IMAGE ID
+  br3ndonland/udacity-fsnd-p4-flask-catalog   latest              8588f89253bb
+  ```
+
+  - It's disappointing that DigitalOcean doesn't have better integration with Docker Cloud.
+  - **CI/CD (Continuous Integration/Continuous Deployment):** The process I used for pushing/pulling the container onto the server is obviously not automated. Is there a webhook to automatically deploy? Might be easier in the near future with [GitHub Actions](https://developer.github.com/actions/).
+
+### Build and run Docker container on server
+
+- Now that the Docker container is on the server, I need to build and run it.
+- First of all, where is it?
+
+  ```sh
+  br3ndonland@udacity:~$ sudo docker image ls
+  REPOSITORY                                  TAG                 IMAGE ID
+  br3ndonland/udacity-fsnd-p4-flask-catalog   latest              8588f89253bb
+  br3ndonland@udacity:~$ find udacity-fsnd-p4-flask-catalog
+  find: ‘udacity-fsnd-p4-flask-catalog’: No such file or directory
+  ```
+
+- Umm... I'll just skip the build step and try running it.
+
+  ```sh
+  br3ndonland@udacity:~$ sudo docker run br3ndonland/udacity-fsnd-p4-flask-catalog
+  [sudo] password for br3ndonland:
+  Traceback (most recent call last):
+    File "application.py", line 188, in <module>
+      CLIENT_ID = json.loads(open('client_secrets.json', 'r')
+  FileNotFoundError: [Errno 2] No such file or directory: 'client_secrets.json'
+  ```
+
+- The error makes sense. I don't commit the *client_secrets.json* file to the GitHub repo in order to keep the credentials secret. How do I add a file to the Docker image? Docker Cloud doesn't include environment variables. I could maybe set something up with Travis CI. I might be able to build, add the *client_secrets.json* file, and deploy to DigitalOcean without going through Docker Cloud.
+- *TODO*
+
+### Configure database
+
+- I left the database as SQLite for now. If I want to use PostgreSQL again instead of SQLite, I can pull the `postgres` container, [Dockerize PostgreSQL](https://docs.docker.com/engine/examples/postgresql_service) and connect it to the application container. See the [Docker docs networking overview](https://docs.docker.com/network/) for how to connect the containers together.
+
+### Expose app to the public internet
+
+- How do I get a Letsencrypt SSL certificate onto the server? DigitalOcean's One-Click Docker [docs](https://www.digitalocean.com/docs/one-clicks/docker/) link to the [certbot Docker docs](https://certbot.eff.org/docs/install.html#running-with-docker), but this is actually not what is needed. The certbot docs say:
+  > Docker is an amazingly simple and quick way to obtain a certificate. However, this mode of operation is unable to install certificates or configure your webserver, because our installer plugins cannot reach your webserver from inside the Docker container... Because Certonly cannot install the certificate from within Docker, you must install the certificate manually according to the procedure recommended by the provider of your webserver.
+- So basically, all I can do with the certbot Docker container is get a certificate. Can I just use Certbot in the standard automated style for Linux servers?
+- Exposing the container: Do I need to reconfigure the ports? DigitalOcean's UFW config only allows
+  > SSH (port 22, rate limited) and 2375/2376 for unencrypted/encrypted communication with the Docker daemon, respectively.
+
+[(Back to top)](#top)
+
+## Troubleshooting
 
 - If the site isn't working, check logs for errors:
 
-  ```shell
+  ```sh
   sudo tail /var/log/apache2/error.log
   sudo tail /var/log/apache2/access.log
   ```
@@ -946,7 +1132,7 @@ In the future, it would be preferable to just use [Docker](https://www.docker.co
 
 <details><summary>Apache troubleshooting</summary>
 
-#### Apache troubleshooting <!-- omit in toc -->
+### Apache troubleshooting <!-- omit in toc -->
 
 - I get an error when browsing to the server URL at [http://192.241.141.20/](http://192.241.141.20/):
 
@@ -963,7 +1149,7 @@ In the future, it would be preferable to just use [Docker](https://www.docker.co
 
 - I checked the error log. The most helpful things I could find were:
 
-  ```shell
+  ```sh
   sudo nano /var/log/apache2/error.log
   ```
 
@@ -977,7 +1163,7 @@ In the future, it would be preferable to just use [Docker](https://www.docker.co
 
 - I tried changing permissions and it didn't change anything.
 
-  ```shell
+  ```sh
   sudo chmod 644 /etc/apache2/sites-available/catalog.conf
   sudo service apache2 restart
   ```
@@ -995,7 +1181,7 @@ In the future, it would be preferable to just use [Docker](https://www.docker.co
 - The error message `Target WSGI script '/var/www/catalog/catalog.wsgi' cannot be loaded as Python module` suggests that maybe I need to reconfigure the WSGI script as a Python module. I changed the file to *wsgi.py* and updated the Apache configuration file accordingly. Still got the same error message.
 - I started noticing a strange error indicating that the SQLAlchemy module was missing:
 
-  ```shell
+  ```text
   grader@udacity6:/var/www/catalog$ sudo tail /var/log/apache2/error.log
   [Sat Jun 16 21:57:03.568120 2018] [wsgi:error] [pid 2503:tid 140707532621568] [client 151.76.182.223:49313]     from sqlalchemy import create_engine
   [Sat Jun 16 21:57:03.568151 2018] [wsgi:error] [pid 2503:tid 140707532621568] [client 151.76.182.223:49313] ImportError: No module named 'sqlalchemy'
@@ -1004,7 +1190,7 @@ In the future, it would be preferable to just use [Docker](https://www.docker.co
 - This was a clue that Apache wasn't making use of my virtual environment.
 - **Although it is optimal to have a defined virtual environment for the app, after all the difficulty I have been through up to this point, I decided to just install the required modules without the virtual environment. I made sure *application.py* was running on localhost, restarted Apache, navigated to the IP address for the server, and... it worked!**
 
-  ```shell
+  ```sh
   sudo pip3 install flask
   sudo pip3 install oauth2client
   sudo pip3 install psycopg2
@@ -1020,14 +1206,14 @@ In the future, it would be preferable to just use [Docker](https://www.docker.co
 
 <details><summary>DigitalOcean demo FlaskApp</summary>
 
-#### DigitalOcean demo FlaskApp <!-- omit in toc -->
+### DigitalOcean demo FlaskApp <!-- omit in toc -->
 
 - [DigitalOcean How To Deploy a Flask Application on an Ubuntu VPS](https://www.digitalocean.com/community/tutorials/how-to-deploy-a-flask-application-on-an-ubuntu-vps) guide.
 - Walked through the steps exactly.
 - Built the demo app in a different directory on the same server (udacity6, 192.241.141.20).
 - Here's how *FlaskApp.conf* looks:
 
-  ```shell
+  ```sh
   sudo nano /etc/apache2/sites-available/FlaskApp.conf
   ```
 
@@ -1053,7 +1239,7 @@ In the future, it would be preferable to just use [Docker](https://www.docker.co
 
 - I modified the *FlaskApp.wsgi* file to attempt to activate the virtual env, because the tutorial's WSGI file doesn't properly direct to the venv:
 
-  ```shell
+  ```sh
   sudo nano /var/www/FlaskApp/flaskapp.wsgi
   ```
 
@@ -1074,7 +1260,7 @@ In the future, it would be preferable to just use [Docker](https://www.docker.co
 - Still nothing.
 - I got to the step where I was reloading apache, and got
 
-  ```shell
+  ```text
   grader@udacity6:/var/www/FlaskApp/FlaskApp$ service apache2 reload
   ==== AUTHENTICATING FOR org.freedesktop.systemd1.manage-units ===
   Authentication is required to reload 'apache2.service'.
@@ -1160,7 +1346,7 @@ In the future, it would be preferable to just use [Docker](https://www.docker.co
 
 - I deleted `WSGIRestrictStdout Off`. Reload successful.
 
-  ```shell
+  ```text
   grader@udacity6:/var/www/FlaskApp/FlaskApp$ service apache2 reload
   ==== AUTHENTICATING FOR org.freedesktop.systemd1.manage-units ===
   Authentication is required to reload 'apache2.service'.
@@ -1174,7 +1360,7 @@ In the future, it would be preferable to just use [Docker](https://www.docker.co
 
 - Can't see anything. Went through the comments on the tutorial. Edited the *hosts* file and added `192.241.141.20 flaskapp.dev`:
 
-  ```shell
+  ```text
   $ sudo nano /etc/hosts
   # Your system has configured 'manage_etc_hosts' as True.
   # As a result, if you wish for changes to this file to persist
@@ -1198,7 +1384,7 @@ In the future, it would be preferable to just use [Docker](https://www.docker.co
 - Still nothing. I get the same internal server error.
 - Using `tail` was more helpful, but I couldn't clearly identify what was going wrong.
 
-  ```shell
+  ```text
   grader@udacity6:~$ sudo service apache2 restart
   grader@udacity6:~$ sudo tail /var/log/apache2/error.log
   [Thu Jun 14 22:54:06.426781 2018] [mpm_event:notice] [pid 7836:tid 140718488364928] AH00489: Apache/2.4.18 (Ubuntu) mod_wsgi/4.3.0 Python/3.5.2 configured -- resuming normal operations
@@ -1215,7 +1401,7 @@ In the future, it would be preferable to just use [Docker](https://www.docker.co
 
 - At this point, the demo app was just interfering with my actual project, so I turned it off.
 
-  ```shell
+  ```sh
   sudo a2dissite FlaskApp
   sudo service apache2 restart
   ```
@@ -1228,13 +1414,13 @@ In the future, it would be preferable to just use [Docker](https://www.docker.co
 
 <details><summary>Gunicorn and Nginx</summary>
 
-#### Gunicorn and Nginx <!-- omit in toc -->
+### Gunicorn and Nginx <!-- omit in toc -->
 
 I followed the [instructions](https://www.digitalocean.com/community/tutorials/how-to-serve-flask-applications-with-gunicorn-and-nginx-on-ubuntu-16-04) to serve the Flask application with Gunicorn and Nginx on Ubuntu 16.04. I didn't get it to work.
 
 - Install Gunicorn and Nginx
 
-  ```shell
+  ```sh
   sudo apt-get install nginx
   cd /var/www/catalog
   pipenv install gunicorn
@@ -1242,7 +1428,7 @@ I followed the [instructions](https://www.digitalocean.com/community/tutorials/h
 
 - Create WSGI entry point: Basically create a new file to import Flask instance from application file (*application.py* in this case), and replicate the instructions at the bottom of the *application.py* file. Note that I had to create a new *wsgi.py* file first with `touch`, then add the text, otherwise it wouldn't save (I was working in the DigitalOcean browser console, not sure if that's why). I'm also not sure if you need the `CLIENT_SECRET` in the WSGI file, but I was getting `app.secret_key` errors from Gunicorn later so I added it.
 
-  ```shell
+  ```sh
   (pipenv) <PATH> $ touch /var/www/catalog/wsgi.py
   (pipenv) <PATH> $ sudo nano /var/www/catalog/wsgi.py
   ```
@@ -1261,7 +1447,7 @@ I followed the [instructions](https://www.digitalocean.com/community/tutorials/h
 
 - Create Gunicorn systemd unit file:
 
-  ```shell
+  ```sh
   sudo nano /etc/systemd/system/catalog.service
   ```
 
@@ -1280,7 +1466,7 @@ I followed the [instructions](https://www.digitalocean.com/community/tutorials/h
 
 - Test Gunicorn:
 
-  ```shell
+  ```sh
   (pipenv) <PATH> $ gunicorn --bind 0.0.0.0:8000 wsgi:app
   ```
 
@@ -1288,7 +1474,7 @@ I followed the [instructions](https://www.digitalocean.com/community/tutorials/h
 
 - Create nginx file for app:
 
-  ```shell
+  ```sh
   sudo nano /etc/nginx/sites-available/catalog
   ```
 
@@ -1306,13 +1492,13 @@ I followed the [instructions](https://www.digitalocean.com/community/tutorials/h
 
 - The nginx configuration file shouldn't need to be changed.
 
-  ```shell
+  ```sh
   sudo nano /etc/nginx/nginx.conf
   ```
 
 - Test with
 
-  ```shell
+  ```sh
   sudo nginx -t
   ```
 
@@ -1323,7 +1509,7 @@ I followed the [instructions](https://www.digitalocean.com/community/tutorials/h
 
 - At this point, testing as recommended by the DigitalOcean guide is successful, both with and without the pipenv active. However attempting to complete the restart step listed in the DigitalOcean guide results in an error.
 
-  ```shell
+  ```sh
   sudo systemctl restart nginx
   ```
 
@@ -1343,15 +1529,11 @@ I followed the [instructions](https://www.digitalocean.com/community/tutorials/h
 
 <details><summary>Azure</summary>
 
-#### Azure <!-- omit in toc -->
+### Azure <!-- omit in toc -->
 
 - Review the page on [Configuring Python with Azure App Service Web Apps](https://docs.microsoft.com/en-us/azure/app-service/web-sites-python-configure).
 - Select [Web app with Flask on Linux](https://portal.azure.com/#create/PTVS.FlaskLinux).
 - I instructed Azure to pull the app from my GitHub repo. It seemed to work, but I wasn't sure how to configure the server from there.
-
-</details>
-
-<details><summary>SSL</summary>
 
 </details>
 

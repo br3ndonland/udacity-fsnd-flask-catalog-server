@@ -14,6 +14,10 @@ Brendon Smith
 
 [![license](https://img.shields.io/badge/license-MIT-blue.svg?longCache=true&style=for-the-badge)](https://choosealicense.com/)
 
+<a href="https://m.do.co/c/8952af9c8fb4"><img src="img/do-logo.svg" width="150px" alt="DigitalOcean logo svg"></img></a>
+
+**Use my [referral link](https://m.do.co/c/8952af9c8fb4) to get $100 free credit on DigitalOcean!**
+
 ![Server project logos: Flask, Ubuntu, Apache](img/server.png)
 
 ## Description

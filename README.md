@@ -25,7 +25,7 @@ Brendon Smith
 In this project, I configured an Ubuntu Linux server instance on [DigitalOcean](https://www.digitalocean.com/) and deployed a Flask app to the server. The app is available at [catalog.br3ndonland.com](https://catalog.br3ndonland.com).
 
 - Software:
-  - [Flask catalog application](https://github.com/br3ndonland/udacity-fsnd-p4-flask-catalog)
+  - [Flask catalog application](https://github.com/br3ndonland/udacity-fsnd-flask-catalog)
   - Python >3.6
   - Pip
   - Modules

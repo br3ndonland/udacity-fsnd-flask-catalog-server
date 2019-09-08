@@ -16,7 +16,7 @@ Brendon Smith
 
 <a href="https://m.do.co/c/8952af9c8fb4"><img src="img/do-logo.svg" width="150px" alt="DigitalOcean logo svg"></img></a>
 
-**Use my [referral link](https://m.do.co/c/8952af9c8fb4) to get $100 free credit on DigitalOcean!**
+**Use my [referral link](https://m.do.co/c/8952af9c8fb4) to get \$50 free credit on DigitalOcean!**
 
 ![Server project logos: Flask, Ubuntu, Apache](img/server.png)
 
@@ -35,4 +35,4 @@ In this project, I configured an Ubuntu Linux server instance on [DigitalOcean](
     - Requests
     - SQLAlchemy
 - See [server-methods.md](info/server-methods.md) for computational narrative (walkthrough).
-- Figure created in [Figma](https://www.figma.com) with logos from [Flask](http://flask.pocoo.org/community/logos/), [Ubuntu](https://design.ubuntu.com/brand/ubuntu-logo/), and [Apache](https://en.wikipedia.org/wiki/File:Apache_Software_Foundation_Logo_(2016).svg).
+- Figure created in [Figma](https://www.figma.com) with logos from [Flask](http://flask.pocoo.org/community/logos/), [Ubuntu](https://design.ubuntu.com/brand/ubuntu-logo/), and [Apache](<https://en.wikipedia.org/wiki/File:Apache_Software_Foundation_Logo_(2016).svg>).
